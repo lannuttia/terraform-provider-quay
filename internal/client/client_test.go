@@ -33,7 +33,7 @@ func TestIsNotFound_True(t *testing.T) {
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"message": "not found"})
 	})
-	_, err := c.GetOrganization(context.Background(), "missing")
+	_, err := c.GetRepository(context.Background(), "org/missing")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -46,7 +46,7 @@ func TestIsNotFound_False(t *testing.T) {
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"message": "boom"})
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -64,9 +64,9 @@ func TestAuthorizationHeader(t *testing.T) {
 			http.Error(w, "bad auth", http.StatusUnauthorized)
 			return
 		}
-		writeJSON(w, http.StatusOK, client.Organization{Name: "org"})
+		writeJSON(w, http.StatusOK, client.Repository{Namespace: "org", Name: "repo"})
 	})
-	org, err := c.GetOrganization(context.Background(), "org")
+	org, err := c.GetRepository(context.Background(), "org/repo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

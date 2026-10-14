@@ -7,15 +7,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
+	dockercontainer "github.com/moby/moby/api/types/container"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redis"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
 
 const (
 	// v3.14.0+ uses SQLite WAL mode, which handles concurrent access from
@@ -63,6 +67,38 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 		return nil, fmt.Errorf("building quay config: %w", err)
 	}
 
+	// Write config and create storage dir on the host, then bind-mount them
+	// into the container. This is the most Podman-compatible approach —
+	// CopyToContainer doesn't work on stopped containers under Podman, and
+	// ContainerFile trips Podman's path-escapes-parent security check.
+	tmpDir, err := os.MkdirTemp("", "quay-test-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating temp dir: %w", err)
+	}
+	// tmpDir will be cleaned up when the test process exits; Podman may need
+	// it to persist for the container's lifetime so we don't defer removal.
+
+	configDir := filepath.Join(tmpDir, "config")
+	storageDir := filepath.Join(tmpDir, "storage")
+	for _, d := range []string{configDir, storageDir, filepath.Join(storageDir, "registry")} {
+		if err := os.MkdirAll(d, 0o777); err != nil {
+			return nil, fmt.Errorf("creating dir %s: %w", d, err)
+		}
+		// Podman rootless maps host UIDs into a user namespace, so the UID
+		// inside the container (Quay runs as 1001) won't match the host UID.
+		// Make directories world-writable so any mapped UID can read/write.
+		if err := os.Chmod(d, 0o777); err != nil {
+			return nil, fmt.Errorf("chmod dir %s: %w", d, err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(cfg), 0o644); err != nil {
+		return nil, fmt.Errorf("writing config: %w", err)
+	}
+	// World-readable so the container UID can open it.
+	if err := os.Chmod(filepath.Join(configDir, "config.yaml"), 0o644); err != nil {
+		return nil, fmt.Errorf("chmod config: %w", err)
+	}
+
 	c, err := tc.Run(ctx, image,
 		tcnetwork.WithNetwork([]string{"quay"}, net),
 		tc.CustomizeRequest(tc.GenericContainerRequest{
@@ -71,12 +107,15 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 				Env: map[string]string{
 					"IGNORE_VALIDATION": "true",
 				},
-				Files: []tc.ContainerFile{
-					{
-						Reader:            strings.NewReader(cfg),
-						ContainerFilePath: "/conf/stack/config.yaml",
-						FileMode:          0o644,
-					},
+				// Use HostConfigModifier to set bind mounts with the :z SELinux
+				// label. On Podman/Fedora (SELinux enforcing), the :z flag
+				// relabels the host directory so the container process can access
+				// it regardless of UID mapping in rootless mode.
+				HostConfigModifier: func(hc *dockercontainer.HostConfig) {
+					hc.Binds = append(hc.Binds,
+						configDir+":"+"/conf/stack"+":z",
+						storageDir+":"+"/datastorage"+":z",
+					)
 				},
 				WaitingFor: wait.ForAll(
 					wait.ForListeningPort(quayPort).
@@ -205,6 +244,8 @@ FEATURE_GARBAGE_COLLECTION: false
 FEATURE_DIRECT_LOGIN: true
 FEATURE_APP_SPECIFIC_TOKENS: true
 `))
+
+
 
 func buildQuayConfig() (string, error) {
 	var buf strings.Builder

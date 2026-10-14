@@ -20,7 +20,7 @@ func TestAPIError_401_Unauthorized(t *testing.T) {
 			"error_type": "invalid_token",
 		})
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error for 401, got nil")
 	}
@@ -42,7 +42,7 @@ func TestAPIError_403_Forbidden(t *testing.T) {
 			"error_type": "insufficient_scope",
 		})
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error for 403, got nil")
 	}
@@ -82,7 +82,7 @@ func TestAPIError_500_InternalServerError(t *testing.T) {
 			"message": "Internal server error",
 		})
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error for 500, got nil")
 	}
@@ -101,7 +101,7 @@ func TestAPIError_NonJSONErrorBody(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("plain text error from proxy"))
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error for non-JSON 500, got nil")
 	}
@@ -117,7 +117,7 @@ func TestSuccessResponse_MalformedJSON(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"name": "org", INVALID`))
 	})
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected error for malformed JSON, got nil")
 	}
@@ -132,13 +132,13 @@ func TestContextCancellation(t *testing.T) {
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		// Simulate a slow response — context should cancel before this completes.
 		<-r.Context().Done()
-		writeJSON(w, http.StatusOK, client.Organization{Name: "org"})
+		writeJSON(w, http.StatusOK, client.Repository{Namespace: "org", Name: "repo"})
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately.
 
-	_, err := c.GetOrganization(ctx, "org")
+	_, err := c.GetRepository(ctx, "org/repo")
 	if err == nil {
 		t.Fatal("expected error for cancelled context, got nil")
 	}
@@ -160,7 +160,7 @@ func TestEmptyToken_StillSendsRequest(t *testing.T) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"message": "no token"})
 	})
 	c := client.New(srv.URL, "")
-	_, err := c.GetOrganization(context.Background(), "org")
+	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected 401 error for empty token, got nil")
 	}

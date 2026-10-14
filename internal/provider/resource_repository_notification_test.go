@@ -1,7 +1,6 @@
 package provider_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -9,21 +8,15 @@ import (
 
 func TestAccRepositoryNotification_webhook(t *testing.T) {
 	skipIfNoAcc(t)
-	orgName := rname("tf-acc-notif-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + fmt.Sprintf(`
-resource "quay_organization" "test" {
-  name  = %q
-  email = "tf-acc-notif@example.com"
-}
-
+				Config: providerConfig() + `
 resource "quay_repository" "test" {
-  namespace  = quay_organization.test.name
-  name       = "notif-repo"
-  visibility = "private"
+  namespace   = "quayadmin"
+  name        = "notif-repo"
+  visibility  = "private"
   description = ""
 }
 
@@ -39,7 +32,7 @@ resource "quay_repository_notification" "test" {
 
   event_config = {}
 }
-`, orgName),
+`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event", "repo_push"),
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "method", "webhook"),
@@ -53,19 +46,13 @@ resource "quay_repository_notification" "test" {
 
 func TestAccRepositoryNotification_vulnerability(t *testing.T) {
 	skipIfNoAcc(t)
-	orgName := rname("tf-acc-vuln-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + fmt.Sprintf(`
-resource "quay_organization" "test" {
-  name  = %q
-  email = "tf-acc-vuln@example.com"
-}
-
+				Config: providerConfig() + `
 resource "quay_repository" "test" {
-  namespace   = quay_organization.test.name
+  namespace   = "quayadmin"
   name        = "vuln-repo"
   visibility  = "private"
   description = ""
@@ -85,7 +72,7 @@ resource "quay_repository_notification" "test" {
     level = "High"
   }
 }
-`, orgName),
+`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event", "vulnerability_found"),
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event_config.level", "High"),

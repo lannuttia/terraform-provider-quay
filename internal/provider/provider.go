@@ -84,24 +84,14 @@ func (p *QuayProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 func (p *QuayProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewOrganizationResource,
-		NewOrganizationApplicationResource,
-		NewOrganizationRobotResource,
-		NewOrganizationTeamResource,
-		NewOrganizationTeamMemberResource,
-		NewOrganizationPrototypePermissionResource,
 		NewRepositoryResource,
 		NewRepositoryNotificationResource,
-		NewRepositoryTeamPermissionResource,
-		NewRepositoryUserPermissionResource,
 	}
 }
 
 func (p *QuayProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewOrganizationDataSource,
 		NewRepositoryDataSource,
-		NewUserDataSource,
 	}
 }
 

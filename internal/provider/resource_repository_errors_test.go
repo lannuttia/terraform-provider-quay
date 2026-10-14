@@ -1,7 +1,6 @@
 package provider_test
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
@@ -46,24 +45,18 @@ resource "quay_repository" "bad" {
 
 func TestAccRepository_DeletedOutOfBand(t *testing.T) {
 	skipIfNoAcc(t)
-	orgName := rname("tf-acc-oob-repo-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + fmt.Sprintf(`
-resource "quay_organization" "test" {
-  name  = %q
-  email = "oob-repo@example.com"
-}
-
+				Config: providerConfig() + `
 resource "quay_repository" "oob" {
-  namespace   = quay_organization.test.name
+  namespace   = "quayadmin"
   name        = "oob-repo"
   visibility  = "private"
   description = ""
 }
-`, orgName),
+`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("quay_repository.oob", "name", "oob-repo"),
 				),

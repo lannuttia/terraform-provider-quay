@@ -10,7 +10,6 @@ import (
 // TestProvider_MissingToken verifies the provider returns a clear error when
 // no token is supplied (neither in config nor environment).
 func TestProvider_MissingToken(t *testing.T) {
-	// Deliberately unset QUAY_TOKEN so the provider has nothing to use.
 	t.Setenv("QUAY_TOKEN", "")
 
 	resource.UnitTest(t, resource.TestCase{
@@ -23,7 +22,10 @@ provider "quay" {
   # token deliberately omitted
 }
 
-data "quay_user" "current" {}
+data "quay_repository" "test" {
+  namespace = "myorg"
+  name      = "myrepo"
+}
 `,
 				ExpectError: regexp.MustCompile(`Missing Quay API Token`),
 			},
@@ -32,7 +34,7 @@ data "quay_user" "current" {}
 }
 
 // TestProvider_InvalidToken verifies that an invalid token results in a
-// meaningful error from the API (401) rather than a panic or empty state.
+// meaningful error from the API rather than a panic or empty state.
 func TestProvider_InvalidToken(t *testing.T) {
 	skipIfNoAcc(t)
 	resource.Test(t, resource.TestCase{
@@ -45,9 +47,12 @@ provider "quay" {
   token = "this-token-is-completely-invalid"
 }
 
-data "quay_user" "current" {}
+data "quay_repository" "test" {
+  namespace = "myorg"
+  name      = "myrepo"
+}
 `,
-				ExpectError: regexp.MustCompile(`(?i)(401|Unauthorized|invalid_token|Error Reading User)`),
+				ExpectError: regexp.MustCompile(`(?i)(401|Unauthorized|invalid_token|Error Reading Repository)`),
 			},
 		},
 	})

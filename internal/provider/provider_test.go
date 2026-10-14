@@ -103,12 +103,8 @@ func TestProvider_Configure(t *testing.T) {
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + `
-data "quay_user" "current" {}
-`,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.quay_user.current", "username"),
-				),
+				// A minimal config — just verify the provider configures without error.
+				Config: providerConfig(),
 			},
 		},
 	})
