@@ -81,21 +81,33 @@ func (r *OrganizationApplicationResource) Schema(_ context.Context, _ resource.S
 				Optional:    true,
 				Computed:    true,
 				Description: "A description of the application.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"application_uri": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "The URI of the application's homepage.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"redirect_uri": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "The OAuth redirect URI.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"avatar_email": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "The email address used for the application's avatar.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}

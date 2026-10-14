@@ -16,6 +16,7 @@ import (
 	"github.com/lannuttia/terraform-provider-quay/internal/client"
 )
 
+
 var _ resource.Resource = &RepositoryNotificationResource{}
 var _ resource.ResourceWithImportState = &RepositoryNotificationResource{}
 
@@ -73,6 +74,7 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 				Computed:    true,
 				Description: "A human-readable title for the notification.",
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
@@ -103,6 +105,7 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 				Computed:    true,
 				Description: "Event-specific configuration. For vulnerability_found, set 'level' to a severity string (e.g. 'High'). For build events, optionally set 'ref-regex'.",
 				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
 					mapplanmodifier.RequiresReplace(),
 				},
 			},
