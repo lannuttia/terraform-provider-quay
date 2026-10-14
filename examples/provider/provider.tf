@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     quay = {
-      source  = "registry.terraform.io/lannuttia/quay"
+      source  = "lannuttia/quay"
       version = "~> 0.1"
     }
   }
@@ -9,10 +9,10 @@ terraform {
 
 provider "quay" {
   # Defaults to https://quay.io. Override for self-hosted instances.
-  # Can also be set via QUAY_URL environment variable.
+  # Can also be set via the QUAY_URL environment variable.
   url = "https://quay.io"
 
-  # Required. Can also be set via QUAY_TOKEN environment variable.
+  # Required. Can also be set via the QUAY_TOKEN environment variable.
   token = var.quay_token
 }
 

@@ -1,6 +1,17 @@
-# Webhook triggered on every push
+resource "quay_organization" "example" {
+  name  = "my-org"
+  email = "admin@example.com"
+}
+
+resource "quay_repository" "example" {
+  namespace  = quay_organization.example.name
+  name       = "my-app"
+  visibility = "private"
+}
+
+# Webhook triggered on every image push
 resource "quay_repository_notification" "push_webhook" {
-  repository = "my-org/my-app"
+  repository = quay_repository.example.id
   event      = "repo_push"
   method     = "webhook"
   title      = "Push notification"
@@ -12,9 +23,9 @@ resource "quay_repository_notification" "push_webhook" {
   event_config = {}
 }
 
-# Slack notification for build failures
+# Slack alert for build failures
 resource "quay_repository_notification" "build_failure_slack" {
-  repository = "my-org/my-app"
+  repository = quay_repository.example.id
   event      = "build_failure"
   method     = "slack"
   title      = "Build failure alert"
@@ -26,9 +37,9 @@ resource "quay_repository_notification" "build_failure_slack" {
   event_config = {}
 }
 
-# Vulnerability notification for High and above
+# Webhook for High severity (and above) vulnerability findings
 resource "quay_repository_notification" "vuln_webhook" {
-  repository = "my-org/my-app"
+  repository = quay_repository.example.id
   event      = "vulnerability_found"
   method     = "webhook"
   title      = "High+ vulnerability alert"
