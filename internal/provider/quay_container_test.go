@@ -38,6 +38,26 @@ type quayContainer struct {
 	tc.Container
 	accessToken string
 	baseURL     string
+	tmpDir      string // host temp dir bind-mounted into the container; removed on cleanup
+	network     *tc.DockerNetwork
+	redis       tc.Container
+}
+
+// Cleanup terminates the Quay container, its Redis sidecar, the shared
+// network, and the host temp directory.
+func (q *quayContainer) Cleanup(ctx context.Context) {
+	if q.Container != nil {
+		_ = q.Container.Terminate(ctx)
+	}
+	if q.redis != nil {
+		_ = q.redis.Terminate(ctx)
+	}
+	if q.network != nil {
+		_ = q.network.Remove(ctx)
+	}
+	if q.tmpDir != "" {
+		_ = os.RemoveAll(q.tmpDir)
+	}
 }
 
 // runQuay starts a Quay container with a Redis sidecar on a shared Docker
@@ -55,10 +75,11 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 	}
 
 	// Redis must be up before Quay tries to connect.
-	_, err = redis.Run(ctx, "redis:7-alpine",
+	redisC, err := redis.Run(ctx, "redis:7-alpine",
 		tcnetwork.WithNetwork([]string{"redis"}, net),
 	)
 	if err != nil {
+		_ = net.Remove(ctx)
 		return nil, fmt.Errorf("starting redis: %w", err)
 	}
 
@@ -155,6 +176,9 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 		Container:   c,
 		accessToken: token,
 		baseURL:     baseURL,
+		tmpDir:      tmpDir,
+		network:     net,
+		redis:       redisC,
 	}, nil
 }
 

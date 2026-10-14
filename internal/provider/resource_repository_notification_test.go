@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -8,31 +9,31 @@ import (
 
 func TestAccRepositoryNotification_webhook(t *testing.T) {
 	skipIfNoAcc(t)
+	orgName := rname("tf-acc-notif-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + `
+				Config: providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "tf-acc-notif@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "notif-repo"
   visibility  = "private"
   description = ""
 }
-
 resource "quay_repository_notification" "test" {
   repository = quay_repository.test.id
   event      = "repo_push"
   method     = "webhook"
   title      = "push webhook"
-
-  config = {
-    url = "https://httpbin.org/post"
-  }
-
+  config       = { url = "https://httpbin.org/post" }
   event_config = {}
 }
-`,
+`, orgName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event", "repo_push"),
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "method", "webhook"),
@@ -46,33 +47,31 @@ resource "quay_repository_notification" "test" {
 
 func TestAccRepositoryNotification_vulnerability(t *testing.T) {
 	skipIfNoAcc(t)
+	orgName := rname("tf-acc-vuln-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig() + `
+				Config: providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "tf-acc-vuln@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "vuln-repo"
   visibility  = "private"
   description = ""
 }
-
 resource "quay_repository_notification" "test" {
-  repository = quay_repository.test.id
-  event      = "vulnerability_found"
-  method     = "webhook"
-  title      = "vuln alert"
-
-  config = {
-    url = "https://httpbin.org/post"
-  }
-
-  event_config = {
-    level = "High"
-  }
+  repository   = quay_repository.test.id
+  event        = "vulnerability_found"
+  method       = "webhook"
+  title        = "vuln alert"
+  config       = { url = "https://httpbin.org/post" }
+  event_config = { level = "High" }
 }
-`,
+`, orgName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event", "vulnerability_found"),
 					resource.TestCheckResourceAttr("quay_repository_notification.test", "event_config.level", "High"),

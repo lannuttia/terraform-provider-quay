@@ -45,13 +45,18 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
+	// Ryuk reaper containers don't work under Podman rootless — they leave
+	// containers running indefinitely. Disable Ryuk and rely on explicit
+	// Cleanup() calls instead.
+	os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true") //nolint:errcheck
+
 	ctx := context.Background()
 	quayC, err := runQuay(ctx, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not start Quay testcontainer: %v\n", err)
 		os.Exit(1)
 	}
-	defer quayC.Terminate(ctx) //nolint:errcheck
+	defer quayC.Cleanup(ctx)
 
 	testState.quayURL = quayC.baseURL
 	testState.quayToken = quayC.accessToken

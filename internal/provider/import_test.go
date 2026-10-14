@@ -20,18 +20,120 @@ func notificationImportID(resourceName string) resource.ImportStateIdFunc {
 }
 
 // ---------------------------------------------------------------------------
+// quay_organization
+// ---------------------------------------------------------------------------
+
+func TestAccOrganization_importCommand(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-org-cmd")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("quay_organization.test", "name", orgName),
+				),
+			},
+			{
+				// Keep the resource alive by including its config, and import
+				// it by ID. The framework will not destroy between steps when
+				// Config is set.
+				Config:                  cfg,
+				ResourceName:            "quay_organization.test",
+				ImportState:             true,
+				ImportStateId:           orgName,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"tag_expiration_s", "invoice_email", "invoice_email_address", "contact_email"},
+			},
+		},
+	})
+}
+
+func TestAccOrganization_importBlock(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-org-blk")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("quay_organization.test", "name", orgName),
+				),
+			},
+			{
+				Config:          cfg,
+				ResourceName:    "quay_organization.test",
+				ImportStateId:   orgName,
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithID,
+			},
+		},
+	})
+}
+
+func TestAccOrganization_generateConfig(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-org-gen")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("quay_organization.test", "name", orgName),
+				),
+			},
+			{
+				Config:          cfg,
+				ResourceName:    "quay_organization.test",
+				ImportStateId:   orgName,
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithID,
+				GenerateConfig:  true,
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------
 // quay_repository
 // ---------------------------------------------------------------------------
 
 func TestAccRepository_importCommand(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-repo-cmd")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-repo"
   visibility  = "private"
   description = "import test"
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
@@ -48,13 +150,19 @@ resource "quay_repository" "test" {
 
 func TestAccRepository_importBlock(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-repo-blk")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-repo"
   visibility  = "private"
   description = "import test"
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
@@ -71,13 +179,19 @@ resource "quay_repository" "test" {
 
 func TestAccRepository_generateConfig(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-repo-gen")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-repo"
   visibility  = "private"
   description = "import test"
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
@@ -99,9 +213,14 @@ resource "quay_repository" "test" {
 
 func TestAccRepositoryNotification_importCommand(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-notif-cmd")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-notif-repo"
   visibility  = "private"
   description = ""
@@ -113,7 +232,8 @@ resource "quay_repository_notification" "test" {
   title        = "import test"
   config       = { url = "https://httpbin.org/post" }
   event_config = {}
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
@@ -131,9 +251,14 @@ resource "quay_repository_notification" "test" {
 
 func TestAccRepositoryNotification_importBlock(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-notif-blk")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-notif-repo"
   visibility  = "private"
   description = ""
@@ -145,7 +270,8 @@ resource "quay_repository_notification" "test" {
   title        = "import test"
   config       = { url = "https://httpbin.org/post" }
   event_config = {}
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
@@ -163,9 +289,14 @@ resource "quay_repository_notification" "test" {
 
 func TestAccRepositoryNotification_generateConfig(t *testing.T) {
 	skipIfNoAcc(t)
-	cfg := providerConfig() + `
+	orgName := rname("tf-acc-import-notif-gen")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
 resource "quay_repository" "test" {
-  namespace   = "quayadmin"
+  namespace   = quay_organization.test.name
   name        = "import-notif-repo"
   visibility  = "private"
   description = ""
@@ -177,7 +308,8 @@ resource "quay_repository_notification" "test" {
   title        = "import test"
   config       = { url = "https://httpbin.org/post" }
   event_config = {}
-}`
+}
+`, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
