@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,9 +48,10 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("quay API error %d: %s", e.StatusCode, e.Message)
 }
 
-// IsNotFound returns true if the error is a 404 Not Found.
+// IsNotFound returns true if the error chain contains a 404 Not Found APIError.
 func IsNotFound(err error) bool {
-	if apiErr, ok := err.(*APIError); ok {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
 		return apiErr.StatusCode == http.StatusNotFound
 	}
 	return false
