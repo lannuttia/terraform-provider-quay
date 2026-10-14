@@ -35,7 +35,7 @@ const (
 // quayContainer holds a running Quay instance and the credentials needed to
 // interact with it.
 type quayContainer struct {
-	tc.Container
+	quay        tc.Container
 	accessToken string
 	baseURL     string
 	tmpDir      string // host temp dir bind-mounted into the container; removed on cleanup
@@ -46,8 +46,8 @@ type quayContainer struct {
 // Cleanup terminates the Quay container, its Redis sidecar, the shared
 // network, and the host temp directory.
 func (q *quayContainer) Cleanup(ctx context.Context) {
-	if q.Container != nil {
-		_ = q.Container.Terminate(ctx)
+	if q.quay != nil {
+		_ = q.quay.Terminate(ctx)
 	}
 	if q.redis != nil {
 		_ = q.redis.Terminate(ctx)
@@ -173,7 +173,7 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 	}
 
 	return &quayContainer{
-		Container:   c,
+		quay:        c,
 		accessToken: token,
 		baseURL:     baseURL,
 		tmpDir:      tmpDir,
