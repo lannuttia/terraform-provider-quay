@@ -12,12 +12,12 @@ import (
 
 // newTestServer starts an httptest server. The handler receives the full request
 // and writes a JSON response. It returns the server and a *client.Client pointed
-// at it.
+// at it with retry delays set to zero so tests run at full speed.
 func newTestServer(t *testing.T, handler http.HandlerFunc) (*httptest.Server, *client.Client) {
 	t.Helper()
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
-	return srv, client.New(srv.URL, "test-token")
+	return srv, client.NewTestClient(srv.URL, "test-token")
 }
 
 // writeJSON is a helper that serialises v as JSON and writes it with status code.

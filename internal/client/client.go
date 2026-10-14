@@ -20,6 +20,7 @@ type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+	retryDelay func(attempt int) time.Duration
 }
 
 // New creates a new Quay API client.
@@ -32,7 +33,23 @@ func New(baseURL, token string) *Client {
 		baseURL:    baseURL,
 		token:      token,
 		httpClient: &http.Client{},
+		retryDelay: func(attempt int) time.Duration {
+			return time.Duration(attempt) * time.Second
+		},
 	}
+}
+
+// withRetryDelay returns a shallow copy of the client with a custom retry
+// delay function. Used in tests to eliminate retry wait time.
+func (c *Client) withRetryDelay(f func(attempt int) time.Duration) *Client {
+	copy := *c
+	copy.retryDelay = f
+	return &copy
+}
+
+// NewTestClient creates a client with zero retry delays, for use in tests only.
+func NewTestClient(baseURL, token string) *Client {
+	return New(baseURL, token).withRetryDelay(func(int) time.Duration { return 0 })
 }
 
 // BaseURL returns the base URL this client is configured to talk to.
@@ -120,7 +137,7 @@ func (c *Client) do(req *http.Request, out any) error {
 			select {
 			case <-req.Context().Done():
 				return req.Context().Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
+			case <-time.After(c.retryDelay(attempt)):
 			}
 		}
 		// Restore the body for each attempt.
