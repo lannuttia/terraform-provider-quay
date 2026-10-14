@@ -171,10 +171,7 @@ func (r *OrganizationTeamResource) mapToState(team *client.Team, orgName, teamNa
 	if team.Role != "" {
 		state.Role = types.StringValue(team.Role)
 	}
-	if team.Description != "" {
-		state.Description = types.StringValue(team.Description)
-	} else if state.Description.IsNull() {
-		state.Description = types.StringValue("")
-	}
+	// Always write description so Computed fields are never left unknown after apply.
+	state.Description = types.StringValue(team.Description)
 	state.ID = types.StringValue(fmt.Sprintf("%s/%s", orgName, teamName))
 }
