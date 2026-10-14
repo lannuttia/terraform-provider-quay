@@ -14,6 +14,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationRobotResource{}
+var _ resource.ResourceWithImportState = &OrganizationRobotResource{}
 
 type OrganizationRobotResource struct {
 	client *client.Client
@@ -159,6 +160,19 @@ func (r *OrganizationRobotResource) Delete(ctx context.Context, req resource.Del
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Organization Robot", err.Error())
 	}
+}
+
+func (r *OrganizationRobotResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: org_name/short_name
+	parts, diags := splitImportID(resp, req.ID, 2, "my-org/my-robot")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":         req.ID,
+		"org_name":   parts[0],
+		"short_name": parts[1],
+	})
 }
 
 func (r *OrganizationRobotResource) mapToState(robot *client.Robot, orgName string, state *OrganizationRobotResourceModel) {

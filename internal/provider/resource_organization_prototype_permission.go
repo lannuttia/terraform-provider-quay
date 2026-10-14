@@ -15,6 +15,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationPrototypePermissionResource{}
+var _ resource.ResourceWithImportState = &OrganizationPrototypePermissionResource{}
 
 type OrganizationPrototypePermissionResource struct {
 	client *client.Client
@@ -181,6 +182,18 @@ func (r *OrganizationPrototypePermissionResource) Delete(ctx context.Context, re
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Prototype Permission", err.Error())
 	}
+}
+
+func (r *OrganizationPrototypePermissionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: org_name/prototype_id
+	parts, diags := splitImportID(resp, req.ID, 2, "my-org/abc-123-uuid")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":       parts[1],
+		"org_name": parts[0],
+	})
 }
 
 func (r *OrganizationPrototypePermissionResource) mapToState(proto *client.Prototype, orgName string, state *OrganizationPrototypePermissionResourceModel) {

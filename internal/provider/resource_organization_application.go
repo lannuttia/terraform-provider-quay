@@ -14,6 +14,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationApplicationResource{}
+var _ resource.ResourceWithImportState = &OrganizationApplicationResource{}
 
 type OrganizationApplicationResource struct {
 	client *client.Client
@@ -192,6 +193,19 @@ func (r *OrganizationApplicationResource) Delete(ctx context.Context, req resour
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Organization Application", err.Error())
 	}
+}
+
+func (r *OrganizationApplicationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: org_name/client_id
+	parts, diags := splitImportID(resp, req.ID, 2, "my-org/abc123clientid")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":        req.ID,
+		"org_name":  parts[0],
+		"client_id": parts[1],
+	})
 }
 
 func (r *OrganizationApplicationResource) mapToState(app *client.OrgApplication, orgName string, state *OrganizationApplicationResourceModel) {

@@ -14,6 +14,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationTeamMemberResource{}
+var _ resource.ResourceWithImportState = &OrganizationTeamMemberResource{}
 
 type OrganizationTeamMemberResource struct {
 	client *client.Client
@@ -131,6 +132,20 @@ func (r *OrganizationTeamMemberResource) Read(ctx context.Context, req resource.
 
 	// Member not found — remove from state
 	resp.State.RemoveResource(ctx)
+}
+
+func (r *OrganizationTeamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: org_name/team_name/member_name
+	parts, diags := splitImportID(resp, req.ID, 3, "my-org/my-team/alice")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":          req.ID,
+		"org_name":    parts[0],
+		"team_name":   parts[1],
+		"member_name": parts[2],
+	})
 }
 
 func (r *OrganizationTeamMemberResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {

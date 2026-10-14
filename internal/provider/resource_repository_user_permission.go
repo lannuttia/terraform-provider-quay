@@ -15,6 +15,7 @@ import (
 )
 
 var _ resource.Resource = &RepositoryUserPermissionResource{}
+var _ resource.ResourceWithImportState = &RepositoryUserPermissionResource{}
 
 type RepositoryUserPermissionResource struct {
 	client *client.Client
@@ -81,6 +82,20 @@ func (r *RepositoryUserPermissionResource) Configure(_ context.Context, req reso
 		return
 	}
 	r.client = c
+}
+
+func (r *RepositoryUserPermissionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: namespace/repo_name/username
+	parts, diags := splitImportID(resp, req.ID, 3, "my-org/my-repo/alice")
+	if diags.HasError() {
+		return
+	}
+	repository := parts[0] + "/" + parts[1]
+	setAttrs(ctx, resp, map[string]string{
+		"id":         repository + "/" + parts[2],
+		"repository": repository,
+		"username":   parts[2],
+	})
 }
 
 func (r *RepositoryUserPermissionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

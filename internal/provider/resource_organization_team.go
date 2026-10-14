@@ -15,6 +15,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationTeamResource{}
+var _ resource.ResourceWithImportState = &OrganizationTeamResource{}
 
 type OrganizationTeamResource struct {
 	client *client.Client
@@ -163,6 +164,19 @@ func (r *OrganizationTeamResource) Delete(ctx context.Context, req resource.Dele
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Organization Team", err.Error())
 	}
+}
+
+func (r *OrganizationTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: org_name/team_name
+	parts, diags := splitImportID(resp, req.ID, 2, "my-org/my-team")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":       req.ID,
+		"org_name": parts[0],
+		"name":     parts[1],
+	})
 }
 
 func (r *OrganizationTeamResource) mapToState(team *client.Team, orgName, teamName string, state *OrganizationTeamResourceModel) {

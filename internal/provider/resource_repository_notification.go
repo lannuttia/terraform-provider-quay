@@ -17,6 +17,7 @@ import (
 )
 
 var _ resource.Resource = &RepositoryNotificationResource{}
+var _ resource.ResourceWithImportState = &RepositoryNotificationResource{}
 
 type RepositoryNotificationResource struct {
 	client *client.Client
@@ -204,6 +205,21 @@ func (r *RepositoryNotificationResource) Read(ctx context.Context, req resource.
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (r *RepositoryNotificationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: namespace/repo_name/uuid  (3 parts, last part is the UUID)
+	// We use SplitN with n=3 so the UUID stays intact as the third element.
+	parts, diags := splitImportID(resp, req.ID, 3, "my-org/my-repo/32bb0ef6-ad69-4ccb-b64e-ddbc8bfd444d")
+	if diags.HasError() {
+		return
+	}
+	repository := parts[0] + "/" + parts[1]
+	setAttrs(ctx, resp, map[string]string{
+		"id":         req.ID,
+		"repository": repository,
+		"uuid":       parts[2],
+	})
 }
 
 func (r *RepositoryNotificationResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {

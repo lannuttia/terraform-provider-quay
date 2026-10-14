@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -14,6 +15,7 @@ import (
 )
 
 var _ resource.Resource = &OrganizationResource{}
+var _ resource.ResourceWithImportState = &OrganizationResource{}
 
 type OrganizationResource struct {
 	client *client.Client
@@ -184,6 +186,11 @@ func (r *OrganizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Organization", err.Error())
 	}
+}
+
+func (r *OrganizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID is the organization name.
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), req.ID)...)
 }
 
 func (r *OrganizationResource) mapToState(org *client.Organization, state *OrganizationResourceModel) {

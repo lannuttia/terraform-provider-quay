@@ -15,6 +15,7 @@ import (
 )
 
 var _ resource.Resource = &RepositoryResource{}
+var _ resource.ResourceWithImportState = &RepositoryResource{}
 
 type RepositoryResource struct {
 	client *client.Client
@@ -177,6 +178,19 @@ func (r *RepositoryResource) Delete(ctx context.Context, req resource.DeleteRequ
 	if err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.AddError("Error Deleting Repository", err.Error())
 	}
+}
+
+func (r *RepositoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import ID: namespace/name
+	parts, diags := splitImportID(resp, req.ID, 2, "my-org/my-repo")
+	if diags.HasError() {
+		return
+	}
+	setAttrs(ctx, resp, map[string]string{
+		"id":        req.ID,
+		"namespace": parts[0],
+		"name":      parts[1],
+	})
 }
 
 func (r *RepositoryResource) mapToState(repo *client.Repository, state *RepositoryResourceModel) {
