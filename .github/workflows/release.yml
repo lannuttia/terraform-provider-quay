@@ -1,0 +1,47 @@
+name: Release
+
+# Triggers when a tag matching v* is pushed (e.g. v0.1.0, v1.2.3).
+on:
+  push:
+    tags:
+      - "v*"
+
+# Releases need write access to create the GitHub Release and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # GoReleaser needs the full git history to build changelogs and
+          # to identify which commits belong to this release.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      # Import the RSA/DSA GPG private key stored in repository secrets.
+      # The Terraform Registry rejects ECC (ed25519) keys — make sure the
+      # key you generate and upload is RSA or DSA.
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        id: import_gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          args: release --clean
+        env:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GPG_FINGERPRINT comes from the import_gpg step above and is
+          # referenced in .goreleaser.yml signs[].args.
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}

@@ -8,6 +8,10 @@ OS_ARCH     = $(shell go env GOOS)_$(shell go env GOARCH)
 
 default: build
 
+.PHONY: generate
+generate:
+	go generate ./...
+
 .PHONY: build
 build:
 	go build -o $(BINARY)

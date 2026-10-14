@@ -52,6 +52,58 @@ provider "quay" {
 | `data.quay_repository` | Reads information about a Quay repository |
 | `data.quay_user` | Reads information about a Quay user |
 
+## Publishing to the Terraform Registry
+
+### One-time setup
+
+#### 1. Generate a GPG signing key (RSA — the Registry rejects ECC keys)
+
+```shell
+gpg --full-generate-key
+# Choose: (1) RSA and RSA, 4096 bits
+```
+
+#### 2. Add the public key to the Terraform Registry
+
+```shell
+# Copy this output
+gpg --armor --export your-email@example.com
+```
+
+Go to **https://registry.terraform.io/settings/gpg-keys** and paste it.
+
+#### 3. Add secrets to your GitHub repository
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|---|---|
+| `GPG_PRIVATE_KEY` | `gpg --armor --export-secret-keys YOUR_KEY_ID` |
+| `PASSPHRASE` | The passphrase you set when generating the key |
+
+#### 4. Register the provider on the Terraform Registry
+
+1. Sign in to [registry.terraform.io](https://registry.terraform.io) with GitHub.
+2. Click **Publish → Provider** in the top-right navigation.
+3. Select your GitHub namespace and the `terraform-provider-quay` repository.
+4. Accept the Terms of Use and click **Publish Provider**.
+
+The Registry will create a webhook on your repo. Every future GitHub Release
+is automatically picked up.
+
+### Publishing a release
+
+```shell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The `release.yml` workflow fires, GoReleaser builds binaries for all
+platforms, signs the checksums with your GPG key, and creates a GitHub
+Release. The Registry webhook ingests it within a few minutes.
+
+---
+
 ## Development
 
 ### Building
