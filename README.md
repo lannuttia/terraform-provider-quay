@@ -1,11 +1,21 @@
 # Terraform Provider for Quay
 
-A Terraform provider for managing resources on [Quay.io](https://quay.io) or a self-hosted [Red Hat Quay](https://www.redhat.com/en/technologies/cloud-computing/quay) instance.
+A Terraform provider for managing resources on [Quay.io](https://quay.io) or a
+self-hosted [Red Hat Quay](https://www.redhat.com/en/technologies/cloud-computing/quay)
+instance.
+
+[![Tests](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/test.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/test.yml)
+[![Registry](https://img.shields.io/badge/Terraform%20Registry-lannuttia%2Fquay-623CE4)](https://registry.terraform.io/providers/lannuttia/quay/latest)
+
+## Documentation
+
+Full provider documentation, including argument references and import examples,
+is available on the [Terraform Registry](https://registry.terraform.io/providers/lannuttia/quay/latest/docs).
 
 ## Requirements
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5
+- [Go](https://golang.org/doc/install) >= 1.21 (for development only)
 
 ## Usage
 
@@ -13,18 +23,18 @@ A Terraform provider for managing resources on [Quay.io](https://quay.io) or a s
 terraform {
   required_providers {
     quay = {
-      source  = "registry.terraform.io/lannuttia/quay"
-      version = "~> 0.1"
+      source  = "lannuttia/quay"
+      version = "~> 0.2"
     }
   }
 }
 
 provider "quay" {
-  # url defaults to https://quay.io
-  # Can also be set via QUAY_URL environment variable
+  # Defaults to https://quay.io. Override for self-hosted instances.
+  # Can also be set via the QUAY_URL environment variable.
   url = "https://quay.io"
 
-  # Can also be set via QUAY_TOKEN environment variable
+  # Can also be set via the QUAY_TOKEN environment variable.
   token = var.quay_token
 }
 ```
@@ -33,24 +43,77 @@ provider "quay" {
 
 | Resource | Description |
 |---|---|
-| `quay_organization` | Manages a Quay organization |
-| `quay_organization_application` | Manages an OAuth application in an organization |
-| `quay_organization_robot` | Manages a robot account in an organization |
-| `quay_organization_team` | Manages a team in an organization |
-| `quay_organization_team_member` | Manages membership in an organization team |
-| `quay_organization_prototype_permission` | Manages default permission prototypes for an organization |
-| `quay_repository` | Manages a Quay repository |
-| `quay_repository_notification` | Manages a notification (webhook) on a repository |
-| `quay_repository_team_permission` | Manages a team's permission on a repository |
-| `quay_repository_user_permission` | Manages a user's permission on a repository |
+| [`quay_organization`](https://registry.terraform.io/providers/lannuttia/quay/latest/docs/resources/organization) | Manages a Quay organization |
+| [`quay_repository`](https://registry.terraform.io/providers/lannuttia/quay/latest/docs/resources/repository) | Manages a Quay repository |
+| [`quay_repository_notification`](https://registry.terraform.io/providers/lannuttia/quay/latest/docs/resources/repository_notification) | Manages a webhook or notification on a repository |
 
 ## Supported Data Sources
 
 | Data Source | Description |
 |---|---|
-| `data.quay_organization` | Reads information about a Quay organization |
-| `data.quay_repository` | Reads information about a Quay repository |
-| `data.quay_user` | Reads information about a Quay user |
+| [`quay_organization`](https://registry.terraform.io/providers/lannuttia/quay/latest/docs/data-sources/organization) | Reads information about a Quay organization |
+| [`quay_repository`](https://registry.terraform.io/providers/lannuttia/quay/latest/docs/data-sources/repository) | Reads information about a Quay repository |
+
+---
+
+## Development
+
+### Requirements
+
+- [Go](https://golang.org/doc/install) >= 1.21
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/) (for acceptance tests)
+
+### Building
+
+```shell
+make build
+```
+
+### Installing Locally
+
+Installs the provider binary into `~/.terraform.d/plugins/` so you can use it
+with a local Terraform configuration:
+
+```shell
+make install
+```
+
+### Running Unit Tests
+
+No external dependencies required:
+
+```shell
+make test
+```
+
+### Running Acceptance Tests
+
+Acceptance tests spin up a real Quay instance automatically using
+[testcontainers-go](https://golang.testcontainers.org/) — no manual setup
+needed if you have Docker or Podman available:
+
+```shell
+make testacc
+```
+
+To run against an existing Quay instance instead (skips the testcontainer):
+
+```shell
+export QUAY_URL=https://quay.io   # or your self-hosted URL
+export QUAY_TOKEN=your_token_here
+make testacc
+```
+
+### Regenerating Documentation
+
+Documentation in `docs/` is generated from schema descriptions in the provider
+code and example files in `examples/`. After changing either, run:
+
+```shell
+make generate
+```
+
+---
 
 ## Publishing to the Terraform Registry
 
@@ -63,14 +126,13 @@ gpg --full-generate-key
 # Choose: (1) RSA and RSA, 4096 bits
 ```
 
-#### 2. Add the public key to the Terraform Registry
+#### 2. Upload the public key to the Terraform Registry
 
 ```shell
-# Copy this output
 gpg --armor --export your-email@example.com
 ```
 
-Go to **https://registry.terraform.io/settings/gpg-keys** and paste it.
+Paste the output at **https://registry.terraform.io/settings/gpg-keys**.
 
 #### 3. Add secrets to your GitHub repository
 
@@ -78,8 +140,8 @@ Go to **Settings → Secrets and variables → Actions** and add:
 
 | Secret | Value |
 |---|---|
-| `GPG_PRIVATE_KEY` | `gpg --armor --export-secret-keys YOUR_KEY_ID` |
-| `PASSPHRASE` | The passphrase you set when generating the key |
+| `GPG_PRIVATE_KEY` | Output of `gpg --armor --export-secret-keys YOUR_KEY_ID` |
+| `PASSPHRASE` | The passphrase set when generating the key |
 
 #### 4. Register the provider on the Terraform Registry
 
@@ -88,44 +150,14 @@ Go to **Settings → Secrets and variables → Actions** and add:
 3. Select your GitHub namespace and the `terraform-provider-quay` repository.
 4. Accept the Terms of Use and click **Publish Provider**.
 
-The Registry will create a webhook on your repo. Every future GitHub Release
-is automatically picked up.
-
-### Publishing a release
+### Releasing a new version
 
 ```shell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-The `release.yml` workflow fires, GoReleaser builds binaries for all
-platforms, signs the checksums with your GPG key, and creates a GitHub
-Release. The Registry webhook ingests it within a few minutes.
-
----
-
-## Development
-
-### Building
-
-```shell
-make build
-```
-
-### Installing Locally
-
-```shell
-make install
-```
-
-This installs the provider binary into `~/.terraform.d/plugins/` so you can use it with a local Terraform configuration.
-
-### Running Acceptance Tests
-
-Acceptance tests require a real Quay instance and a valid API token:
-
-```shell
-export QUAY_URL=https://quay.io   # or your self-hosted URL
-export QUAY_TOKEN=your_token_here
-make testacc
-```
+The `release.yml` workflow builds binaries for all platforms, signs the
+checksums with your GPG key, generates release notes from conventional commits,
+and creates a GitHub Release. The Registry webhook ingests it within a few
+minutes.
