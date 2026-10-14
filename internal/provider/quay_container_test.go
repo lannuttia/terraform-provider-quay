@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	defaultQuayImage = "quay.io/projectquay/quay:v3.13.1"
+	// v3.14.0+ uses SQLite WAL mode, which handles concurrent access from
+	// parallel test runs without "database is locked" 500 errors.
+	defaultQuayImage = "quay.io/projectquay/quay:v3.17.3"
 	quayPort         = "8080/tcp"
 	quayAdminUser    = "quayadmin"
 	quayAdminPass    = "quayadmin123"

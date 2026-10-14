@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const defaultBaseURL = "https://quay.io"
@@ -91,7 +92,55 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body any) 
 	return req, nil
 }
 
+// retryableStatusCodes are server-side transient errors worth retrying.
+var retryableStatusCodes = map[int]bool{
+	http.StatusInternalServerError: true,
+	http.StatusBadGateway:          true,
+	http.StatusServiceUnavailable:  true,
+	http.StatusGatewayTimeout:      true,
+}
+
+const maxRetries = 3
+
 func (c *Client) do(req *http.Request, out any) error {
+	// Snapshot the body so we can replay it on retries.
+	var bodyBytes []byte
+	if req.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return fmt.Errorf("reading request body for retry: %w", err)
+		}
+		_ = req.Body.Close()
+	}
+
+	var lastErr error
+	for attempt := range maxRetries {
+		if attempt > 0 {
+			select {
+			case <-req.Context().Done():
+				return req.Context().Err()
+			case <-time.After(time.Duration(attempt) * time.Second):
+			}
+		}
+		// Restore the body for each attempt.
+		if bodyBytes != nil {
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			req.ContentLength = int64(len(bodyBytes))
+		}
+		lastErr = c.doOnce(req, out)
+		if lastErr == nil {
+			return nil
+		}
+		var apiErr *APIError
+		if !errors.As(lastErr, &apiErr) || !retryableStatusCodes[apiErr.StatusCode] {
+			return lastErr
+		}
+	}
+	return lastErr
+}
+
+func (c *Client) doOnce(req *http.Request, out any) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("executing request: %w", err)
@@ -105,7 +154,6 @@ func (c *Client) do(req *http.Request, out any) error {
 
 	if resp.StatusCode >= 400 {
 		apiErr := &APIError{StatusCode: resp.StatusCode}
-		// Try to parse the error body
 		var errBody struct {
 			Message   string `json:"message"`
 			ErrorType string `json:"error_type"`
