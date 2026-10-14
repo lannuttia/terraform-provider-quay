@@ -31,11 +31,11 @@ vet:
 
 .PHONY: test
 test:
-	go test ./... -v -count=1 -timeout 120s
+	go test -race ./... -v -count=1 -timeout 120s
 
 .PHONY: testacc
 testacc:
-	TF_ACC=1 go test ./internal/provider/... -v -count=1 -timeout 600s $(TESTARGS)
+	TF_ACC=1 go test -race ./internal/provider/... -v -count=1 -timeout 600s $(TESTARGS)
 
 .PHONY: clean
 clean:
