@@ -1,49 +1,47 @@
 package provider_test
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccOrganization_DuplicateName verifies a clear error when creating an
-// org that already exists.
 func TestAccOrganization_DuplicateName(t *testing.T) {
 	skipIfNoAcc(t)
+	orgName := rname("tf-acc-dup-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
-			// Create the first instance — should succeed.
+			// Create the first instance.
 			{
-				Config: providerConfig() + `
+				Config: providerConfig() + fmt.Sprintf(`
 resource "quay_organization" "first" {
-  name  = "tf-acc-duplicate-org"
+  name  = %q
   email = "first@example.com"
 }
-`,
+`, orgName),
 			},
-			// Attempt to create a second resource with the same org name — should fail.
+			// Attempt to create a second resource with the same name — should fail.
 			{
-				Config: providerConfig() + `
+				Config: providerConfig() + fmt.Sprintf(`
 resource "quay_organization" "first" {
-  name  = "tf-acc-duplicate-org"
+  name  = %q
   email = "first@example.com"
 }
 
 resource "quay_organization" "second" {
-  name  = "tf-acc-duplicate-org"
+  name  = %q
   email = "second@example.com"
 }
-`,
+`, orgName, orgName),
 				ExpectError: regexp.MustCompile(`(?i)(already exists|conflict|409|Error Creating Organization)`),
 			},
 		},
 	})
 }
 
-// TestAccOrganization_DataSourceNotFound verifies a clear error when reading
-// an org that does not exist.
 func TestAccOrganization_DataSourceNotFound(t *testing.T) {
 	skipIfNoAcc(t)
 	resource.Test(t, resource.TestCase{
@@ -61,30 +59,24 @@ data "quay_organization" "missing" {
 	})
 }
 
-// TestAccOrganization_DeletedOutOfBand verifies that when an org is deleted
-// outside of Terraform, the next plan removes it from state rather than
-// erroring fatally (i.e. Read returns gracefully on 404).
 func TestAccOrganization_DeletedOutOfBand(t *testing.T) {
 	skipIfNoAcc(t)
+	orgName := rname("tf-acc-oob-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
 		Steps: []resource.TestStep{
-			// Create the org via Terraform.
 			{
-				Config: providerConfig() + `
+				Config: providerConfig() + fmt.Sprintf(`
 resource "quay_organization" "oob" {
-  name  = "tf-acc-oob-org"
+  name  = %q
   email = "oob@example.com"
 }
-`,
+`, orgName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("quay_organization.oob", "name", "tf-acc-oob-org"),
+					resource.TestCheckResourceAttr("quay_organization.oob", "name", orgName),
 				),
 			},
-			// Delete it via the API directly, then re-apply the same config.
-			// Terraform should detect the drift and recreate it.
 			{
-				// RefreshState forces a Read before comparing plan, surfacing the drift.
 				RefreshState: true,
 			},
 		},

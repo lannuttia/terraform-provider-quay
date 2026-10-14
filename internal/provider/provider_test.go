@@ -3,6 +3,7 @@ package provider_test
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -17,6 +18,15 @@ import (
 var testState struct {
 	quayURL   string
 	quayToken string
+	// runID is a short random suffix appended to all resource names so that
+	// parallel matrix jobs (e.g. Terraform 1.13 vs 1.14) never collide on
+	// the same org/repo names in a shared Quay instance.
+	runID string
+}
+
+// rname returns a resource name unique to this test run.
+func rname(base string) string {
+	return fmt.Sprintf("%s-%s", base, testState.runID)
 }
 
 // TestMain starts a Quay testcontainer once for the entire package when
@@ -31,6 +41,7 @@ func TestMain(m *testing.M) {
 	if u := os.Getenv("QUAY_URL"); u != "" {
 		testState.quayURL = u
 		testState.quayToken = os.Getenv("QUAY_TOKEN")
+		testState.runID = fmt.Sprintf("%06x", rand.Intn(0xffffff))
 		os.Exit(m.Run())
 	}
 
@@ -44,6 +55,7 @@ func TestMain(m *testing.M) {
 
 	testState.quayURL = quayC.baseURL
 	testState.quayToken = quayC.accessToken
+	testState.runID = fmt.Sprintf("%06x", rand.Intn(0xffffff))
 
 	// Make credentials available to child processes spawned by the test framework.
 	if err := os.Setenv("QUAY_URL", testState.quayURL); err != nil {
