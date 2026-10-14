@@ -67,4 +67,21 @@ release:
   # draft: true
 
 changelog:
-  disable: true
+  use: github
+  sort: asc
+  groups:
+    - title: "Features"
+      regexp: '^feat(\(.+\))?!?:.+'
+      order: 0
+    - title: "Bug Fixes"
+      regexp: '^fix(\(.+\))?!?:.+'
+      order: 1
+    - title: "Documentation"
+      regexp: '^docs(\(.+\))?!?:.+'
+      order: 2
+    - title: "Maintenance"
+      regexp: '^(chore|refactor|style|build|ci|perf|test)(\(.+\))?!?:.+'
+      order: 3
+  filters:
+    exclude:
+      - "^Merge "
