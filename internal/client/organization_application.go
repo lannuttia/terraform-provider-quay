@@ -16,10 +16,6 @@ type OrgApplication struct {
 	AvatarEmail    string `json:"avatar_email,omitempty"`
 }
 
-type orgApplicationsResponse struct {
-	Applications []OrgApplication `json:"applications"`
-}
-
 type CreateOrgApplicationRequest struct {
 	Name           string `json:"name"`
 	RedirectURI    string `json:"redirect_uri,omitempty"`

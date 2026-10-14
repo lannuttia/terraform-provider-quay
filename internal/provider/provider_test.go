@@ -46,8 +46,14 @@ func TestMain(m *testing.M) {
 	testState.quayToken = quayC.accessToken
 
 	// Make credentials available to child processes spawned by the test framework.
-	os.Setenv("QUAY_URL", testState.quayURL)
-	os.Setenv("QUAY_TOKEN", testState.quayToken)
+	if err := os.Setenv("QUAY_URL", testState.quayURL); err != nil {
+		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_URL: %v\n", err)
+		os.Exit(1)
+	}
+	if err := os.Setenv("QUAY_TOKEN", testState.quayToken); err != nil {
+		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_TOKEN: %v\n", err)
+		os.Exit(1)
+	}
 
 	os.Exit(m.Run())
 }

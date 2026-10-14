@@ -13,10 +13,6 @@ type Robot struct {
 	UnstructuredMetadata  map[string]any `json:"unstructured_metadata,omitempty"`
 }
 
-type robotsResponse struct {
-	Robots []Robot `json:"robots"`
-}
-
 type CreateRobotRequest struct {
 	Description          string         `json:"description,omitempty"`
 	UnstructuredMetadata map[string]any `json:"unstructured_metadata,omitempty"`

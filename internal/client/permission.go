@@ -11,10 +11,6 @@ type Permission struct {
 	Name string `json:"name,omitempty"`
 }
 
-type permissionsResponse struct {
-	Permissions map[string]Permission `json:"permissions"`
-}
-
 type SetPermissionRequest struct {
 	Role string `json:"role"`
 }

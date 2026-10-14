@@ -16,10 +16,6 @@ type Notification struct {
 	NumberOfFailures int            `json:"number_of_failures,omitempty"`
 }
 
-type notificationsResponse struct {
-	Notifications []Notification `json:"notifications"`
-}
-
 type CreateNotificationRequest struct {
 	Event       string         `json:"event"`
 	Method      string         `json:"method"`
