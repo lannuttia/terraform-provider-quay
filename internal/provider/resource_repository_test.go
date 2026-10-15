@@ -12,6 +12,10 @@ func TestAccRepository_basic(t *testing.T) {
 	orgName := rname("tf-acc-repo-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/my-repo"),
+		),
 		Steps: []resource.TestStep{
 			// Create
 			{
@@ -79,6 +83,10 @@ func TestAccRepository_datasource(t *testing.T) {
 	orgName := rname("tf-acc-ds-repo-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/ds-repo"),
+		),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`

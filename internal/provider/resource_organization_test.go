@@ -12,6 +12,7 @@ func TestAccOrganization_basic(t *testing.T) {
 	orgName := rname("tf-acc-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy:             checkOrganizationDestroyed(orgName),
 		Steps: []resource.TestStep{
 			// Create
 			{
@@ -47,6 +48,7 @@ func TestAccOrganization_datasource(t *testing.T) {
 	orgName := rname("tf-acc-ds-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy:             checkOrganizationDestroyed(orgName),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`

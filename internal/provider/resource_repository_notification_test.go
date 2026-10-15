@@ -12,6 +12,11 @@ func TestAccRepositoryNotification_webhook(t *testing.T) {
 	orgName := rname("tf-acc-notif-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`
@@ -48,6 +53,11 @@ func TestAccRepositoryNotification_slack(t *testing.T) {
 	orgName := rname("tf-acc-slack-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/slack-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`
@@ -83,6 +93,11 @@ func TestAccRepositoryNotification_vulnerability(t *testing.T) {
 	orgName := rname("tf-acc-vuln-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/vuln-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`
@@ -119,6 +134,11 @@ func TestAccRepositoryNotification_buildWithRefRegex(t *testing.T) {
 	orgName := rname("tf-acc-build-org")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/build-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig() + fmt.Sprintf(`

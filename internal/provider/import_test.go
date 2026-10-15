@@ -35,6 +35,7 @@ resource "quay_organization" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy:             checkOrganizationDestroyed(orgName),
 		Steps: []resource.TestStep{
 			{
 				Config: cfg,
@@ -68,6 +69,7 @@ resource "quay_organization" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy:             checkOrganizationDestroyed(orgName),
 		Steps: []resource.TestStep{
 			{
 				Config: cfg,
@@ -97,6 +99,7 @@ resource "quay_organization" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy:             checkOrganizationDestroyed(orgName),
 		Steps: []resource.TestStep{
 			{
 				Config: cfg,
@@ -137,6 +140,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -166,6 +173,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -195,6 +206,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -235,6 +250,11 @@ resource "quay_repository_notification" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -271,6 +291,11 @@ resource "quay_repository_notification" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -307,6 +332,11 @@ resource "quay_repository_notification" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -345,6 +375,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -375,6 +409,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -405,6 +443,10 @@ resource "quay_repository" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-repo"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -443,6 +485,11 @@ resource "quay_repository_notification" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{
@@ -479,6 +526,11 @@ resource "quay_repository_notification" "test" {
 `, orgName)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories(),
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			checkOrganizationDestroyed(orgName),
+			checkRepositoryDestroyed(orgName+"/import-notif-repo"),
+			checkNotificationDestroyed("quay_repository_notification.test"),
+		),
 		Steps: []resource.TestStep{
 			{Config: cfg},
 			{

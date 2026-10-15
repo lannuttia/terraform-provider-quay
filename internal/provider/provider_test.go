@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/lannuttia/terraform-provider-quay/internal/client"
 	"github.com/lannuttia/terraform-provider-quay/internal/provider"
 )
 
@@ -103,6 +105,66 @@ func skipIfNoAcc(t *testing.T) {
 	t.Helper()
 	if os.Getenv("TF_ACC") == "" {
 		t.Skip("TF_ACC not set — skipping acceptance test")
+	}
+}
+
+// ----- CheckDestroy helpers -----------------------------------------------
+
+// quayClient returns a Quay API client pointed at the shared test instance.
+func quayClient() *client.Client {
+	return client.NewTestClient(testState.quayURL, testState.quayToken)
+}
+
+// checkOrganizationDestroyed returns a TestCheckFunc that fails if the named
+// organization still exists in Quay after terraform destroy.
+func checkOrganizationDestroyed(name string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		_, err := quayClient().GetOrganization(context.Background(), name)
+		if client.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("checking organization %q: %w", name, err)
+		}
+		return fmt.Errorf("organization %q still exists after destroy", name)
+	}
+}
+
+// checkRepositoryDestroyed returns a TestCheckFunc that fails if the named
+// repository (namespace/name) still exists in Quay after terraform destroy.
+func checkRepositoryDestroyed(repository string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		_, err := quayClient().GetRepository(context.Background(), repository)
+		if client.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("checking repository %q: %w", repository, err)
+		}
+		return fmt.Errorf("repository %q still exists after destroy", repository)
+	}
+}
+
+// checkNotificationDestroyed returns a TestCheckFunc that reads the uuid and
+// repository attributes from state and fails if the notification still exists
+// in Quay after terraform destroy.
+func checkNotificationDestroyed(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			// Resource was removed from state — nothing to verify.
+			return nil
+		}
+		repository := rs.Primary.Attributes["repository"]
+		uuid := rs.Primary.Attributes["uuid"]
+		_, err := quayClient().GetRepoNotification(context.Background(), repository, uuid)
+		if client.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("checking notification %q on %q: %w", uuid, repository, err)
+		}
+		return fmt.Errorf("notification %q on repository %q still exists after destroy", uuid, repository)
 	}
 }
 
