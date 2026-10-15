@@ -32,9 +32,15 @@ func rname(base string) string {
 // TestMain starts a Quay testcontainer once for the entire package when
 // TF_ACC is set and no external QUAY_URL/QUAY_TOKEN env vars are provided.
 func TestMain(m *testing.M) {
+	os.Exit(runTests(m))
+}
+
+// runTests contains the real TestMain logic and returns an exit code.
+// Keeping os.Exit in TestMain means deferred calls here unwind normally.
+func runTests(m *testing.M) int {
 	if os.Getenv("TF_ACC") == "" {
 		// No acceptance testing — run unit tests (if any) and exit.
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	// Allow overriding with a pre-existing Quay instance.
@@ -42,7 +48,7 @@ func TestMain(m *testing.M) {
 		testState.quayURL = u
 		testState.quayToken = os.Getenv("QUAY_TOKEN")
 		testState.runID = fmt.Sprintf("%06x", rand.Intn(0xffffff))
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	// Ryuk reaper containers don't work under Podman rootless — they leave
@@ -54,8 +60,9 @@ func TestMain(m *testing.M) {
 	quayC, err := runQuay(ctx, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not start Quay testcontainer: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
+	defer quayC.Cleanup(ctx)
 
 	testState.quayURL = quayC.baseURL
 	testState.quayToken = quayC.accessToken
@@ -64,20 +71,14 @@ func TestMain(m *testing.M) {
 	// Make credentials available to child processes spawned by the test framework.
 	if err := os.Setenv("QUAY_URL", testState.quayURL); err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_URL: %v\n", err)
-		quayC.Cleanup(ctx)
-		os.Exit(1)
+		return 1
 	}
 	if err := os.Setenv("QUAY_TOKEN", testState.quayToken); err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_TOKEN: %v\n", err)
-		quayC.Cleanup(ctx)
-		os.Exit(1)
+		return 1
 	}
 
-	// os.Exit does not run deferred functions, so capture the exit code and
-	// clean up the container explicitly before exiting.
-	code := m.Run()
-	quayC.Cleanup(ctx)
-	os.Exit(code)
+	return m.Run()
 }
 
 // providerFactories returns the provider factory map used by resource.Test.
