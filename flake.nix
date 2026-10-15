@@ -36,13 +36,21 @@
 
             # Version control
             git
+
+            # Pre-commit hook runner
+            pre-commit
           ];
 
           shellHook = ''
+            # Override GOROOT so all Go tooling (including pre-commit's
+            # go install invocations) uses the Nix-pinned stdlib rather
+            # than any ambient system Go installation.
+            export GOROOT="${pkgs.go_1_27}/share/go"
             echo "quay-terraform-provider dev shell"
             echo "  go            $(go version)"
             echo "  terraform     $(terraform version -json | ${pkgs.jq}/bin/jq -r '.terraform_version')"
             echo "  golangci-lint $(golangci-lint version --short)"
+            pre-commit install --install-hooks 2>/dev/null
           '';
         };
       });
