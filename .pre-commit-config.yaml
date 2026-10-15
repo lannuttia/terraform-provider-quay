@@ -10,6 +10,12 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.38.2
+    hooks:
+      - id: check-github-workflows
+      - id: check-github-workflows-require-timeout
+
   - repo: local
     hooks:
       - id: go-fmt
