@@ -18,7 +18,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-
 const (
 	// v3.14.0+ uses SQLite WAL mode, which handles concurrent access from
 	// parallel test runs without "database is locked" 500 errors.
@@ -230,8 +229,6 @@ FEATURE_GARBAGE_COLLECTION: false
 FEATURE_DIRECT_LOGIN: true
 FEATURE_APP_SPECIFIC_TOKENS: true
 `))
-
-
 
 func buildQuayConfig() (string, error) {
 	var buf strings.Builder

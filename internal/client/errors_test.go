@@ -10,7 +10,6 @@ import (
 	"github.com/lannuttia/terraform-provider-quay/internal/client"
 )
 
-
 // ----- HTTP error status codes --------------------------------------------
 
 func TestAPIError_401_Unauthorized(t *testing.T) {
