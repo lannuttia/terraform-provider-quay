@@ -2,6 +2,7 @@ package provider_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -321,6 +322,181 @@ resource "quay_repository_notification" "test" {
 				ImportStateKind:   resource.ImportBlockWithID,
 				GenerateConfig:    true,
 				ImportStateIdFunc: notificationImportID("quay_repository_notification.test"),
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Import error cases
+// ---------------------------------------------------------------------------
+
+// quay_repository requires a "namespace/name" import ID.
+// These tests verify that malformed IDs are rejected with a clear error.
+
+func TestAccRepository_importInvalidID_noSeparator(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-repo-bad1")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+resource "quay_repository" "test" {
+  namespace   = quay_organization.test.name
+  name        = "import-repo"
+  visibility  = "private"
+  description = "import error test"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{Config: cfg},
+			{
+				Config:        cfg,
+				ResourceName:  "quay_repository.test",
+				ImportState:   true,
+				ImportStateId: "no-slash-at-all",
+				ExpectError:   regexp.MustCompile(`(?i)(invalid import id|expected 2 parts)`),
+			},
+		},
+	})
+}
+
+func TestAccRepository_importInvalidID_emptyNamespace(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-repo-bad2")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+resource "quay_repository" "test" {
+  namespace   = quay_organization.test.name
+  name        = "import-repo"
+  visibility  = "private"
+  description = "import error test"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{Config: cfg},
+			{
+				Config:        cfg,
+				ResourceName:  "quay_repository.test",
+				ImportState:   true,
+				ImportStateId: "/import-repo",
+				ExpectError:   regexp.MustCompile(`(?i)(invalid import id|must not be empty)`),
+			},
+		},
+	})
+}
+
+func TestAccRepository_importInvalidID_emptyName(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-repo-bad3")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+resource "quay_repository" "test" {
+  namespace   = quay_organization.test.name
+  name        = "import-repo"
+  visibility  = "private"
+  description = "import error test"
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{Config: cfg},
+			{
+				Config:        cfg,
+				ResourceName:  "quay_repository.test",
+				ImportState:   true,
+				ImportStateId: fmt.Sprintf("%s/", orgName),
+				ExpectError:   regexp.MustCompile(`(?i)(invalid import id|must not be empty)`),
+			},
+		},
+	})
+}
+
+// quay_repository_notification requires a "namespace/repo/uuid" import ID.
+
+func TestAccRepositoryNotification_importInvalidID_twoPartsOnly(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-notif-bad1")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+resource "quay_repository" "test" {
+  namespace   = quay_organization.test.name
+  name        = "import-notif-repo"
+  visibility  = "private"
+  description = ""
+}
+resource "quay_repository_notification" "test" {
+  repository   = quay_repository.test.id
+  event        = "repo_push"
+  method       = "webhook"
+  title        = "import error test"
+  config       = { url = "https://httpbin.org/post" }
+  event_config = {}
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{Config: cfg},
+			{
+				Config:        cfg,
+				ResourceName:  "quay_repository_notification.test",
+				ImportState:   true,
+				ImportStateId: fmt.Sprintf("%s/import-notif-repo", orgName),
+				ExpectError:   regexp.MustCompile(`(?i)(invalid import id|expected 3 parts)`),
+			},
+		},
+	})
+}
+
+func TestAccRepositoryNotification_importInvalidID_emptyUUID(t *testing.T) {
+	skipIfNoAcc(t)
+	orgName := rname("tf-acc-import-notif-bad2")
+	cfg := providerConfig() + fmt.Sprintf(`
+resource "quay_organization" "test" {
+  name  = %q
+  email = "import@example.com"
+}
+resource "quay_repository" "test" {
+  namespace   = quay_organization.test.name
+  name        = "import-notif-repo"
+  visibility  = "private"
+  description = ""
+}
+resource "quay_repository_notification" "test" {
+  repository   = quay_repository.test.id
+  event        = "repo_push"
+  method       = "webhook"
+  title        = "import error test"
+  config       = { url = "https://httpbin.org/post" }
+  event_config = {}
+}
+`, orgName)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: providerFactories(),
+		Steps: []resource.TestStep{
+			{Config: cfg},
+			{
+				Config:        cfg,
+				ResourceName:  "quay_repository_notification.test",
+				ImportState:   true,
+				ImportStateId: fmt.Sprintf("%s/import-notif-repo/", orgName),
+				ExpectError:   regexp.MustCompile(`(?i)(invalid import id|must not be empty)`),
 			},
 		},
 	})

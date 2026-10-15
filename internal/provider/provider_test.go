@@ -56,7 +56,6 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "FATAL: could not start Quay testcontainer: %v\n", err)
 		os.Exit(1)
 	}
-	defer quayC.Cleanup(ctx)
 
 	testState.quayURL = quayC.baseURL
 	testState.quayToken = quayC.accessToken
@@ -65,14 +64,20 @@ func TestMain(m *testing.M) {
 	// Make credentials available to child processes spawned by the test framework.
 	if err := os.Setenv("QUAY_URL", testState.quayURL); err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_URL: %v\n", err)
+		quayC.Cleanup(ctx)
 		os.Exit(1)
 	}
 	if err := os.Setenv("QUAY_TOKEN", testState.quayToken); err != nil {
 		fmt.Fprintf(os.Stderr, "FATAL: could not set QUAY_TOKEN: %v\n", err)
+		quayC.Cleanup(ctx)
 		os.Exit(1)
 	}
 
-	os.Exit(m.Run())
+	// os.Exit does not run deferred functions, so capture the exit code and
+	// clean up the container explicitly before exiting.
+	code := m.Run()
+	quayC.Cleanup(ctx)
+	os.Exit(code)
 }
 
 // providerFactories returns the provider factory map used by resource.Test.

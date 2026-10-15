@@ -15,8 +15,6 @@ import (
 
 	dockercontainer "github.com/moby/moby/api/types/container"
 	tc "github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/redis"
-	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -39,48 +37,23 @@ type quayContainer struct {
 	accessToken string
 	baseURL     string
 	tmpDir      string // host temp dir bind-mounted into the container; removed on cleanup
-	network     *tc.DockerNetwork
-	redis       tc.Container
 }
 
-// Cleanup terminates the Quay container, its Redis sidecar, the shared
-// network, and the host temp directory.
+// Cleanup terminates the Quay container and the host temp directory.
 func (q *quayContainer) Cleanup(ctx context.Context) {
 	if q.quay != nil {
 		_ = q.quay.Terminate(ctx)
-	}
-	if q.redis != nil {
-		_ = q.redis.Terminate(ctx)
-	}
-	if q.network != nil {
-		_ = q.network.Remove(ctx)
 	}
 	if q.tmpDir != "" {
 		_ = os.RemoveAll(q.tmpDir)
 	}
 }
 
-// runQuay starts a Quay container with a Redis sidecar on a shared Docker
-// network, waits for the health endpoint, then bootstraps an admin user and
-// returns an access token.
+// runQuay starts a Quay container, waits for the health endpoint, then
+// bootstraps an admin user and returns an access token.
 func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 	if image == "" {
 		image = defaultQuayImage
-	}
-
-	// Isolated network so Quay can reach Redis by its hostname alias.
-	net, err := tcnetwork.New(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating docker network: %w", err)
-	}
-
-	// Redis must be up before Quay tries to connect.
-	redisC, err := redis.Run(ctx, "redis:7-alpine",
-		tcnetwork.WithNetwork([]string{"redis"}, net),
-	)
-	if err != nil {
-		_ = net.Remove(ctx)
-		return nil, fmt.Errorf("starting redis: %w", err)
 	}
 
 	cfg, err := buildQuayConfig()
@@ -121,7 +94,6 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 	}
 
 	c, err := tc.Run(ctx, image,
-		tcnetwork.WithNetwork([]string{"quay"}, net),
 		tc.CustomizeRequest(tc.GenericContainerRequest{
 			ContainerRequest: tc.ContainerRequest{
 				ExposedPorts: []string{quayPort},
@@ -177,8 +149,6 @@ func runQuay(ctx context.Context, image string) (*quayContainer, error) {
 		accessToken: token,
 		baseURL:     baseURL,
 		tmpDir:      tmpDir,
-		network:     net,
-		redis:       redisC,
 	}, nil
 }
 
@@ -239,14 +209,6 @@ SECRET_KEY: "test-secret-key-32-bytes-long-xx"
 DATABASE_SECRET_KEY: "test-db-secret-key-32-bytes-xxxx"
 
 DB_URI: "sqlite:////datastorage/quay.db"
-
-BUILDLOGS_REDIS:
-  host: redis
-  port: 6379
-
-USER_EVENTS_REDIS:
-  host: redis
-  port: 6379
 
 DISTRIBUTED_STORAGE_CONFIG:
   default:
