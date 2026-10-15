@@ -13,42 +13,50 @@ resource "quay_repository" "example" {
 resource "quay_repository_notification" "push_webhook" {
   repository = quay_repository.example.id
   event      = "repo_push"
-  method     = "webhook"
   title      = "Push notification"
 
-  config = {
+  webhook = {
     url = "https://hooks.example.com/quay"
   }
-
-  event_config = {}
 }
 
 # Slack alert for build failures
 resource "quay_repository_notification" "build_failure_slack" {
   repository = quay_repository.example.id
   event      = "build_failure"
-  method     = "slack"
   title      = "Build failure alert"
 
-  config = {
+  slack = {
     url = "https://hooks.slack.com/services/T00000/B00000/XXXXXXXXXXXX"
   }
-
-  event_config = {}
 }
 
 # Webhook for High severity (and above) vulnerability findings
 resource "quay_repository_notification" "vuln_webhook" {
   repository = quay_repository.example.id
   event      = "vulnerability_found"
-  method     = "webhook"
   title      = "High+ vulnerability alert"
 
-  config = {
+  webhook = {
     url = "https://hooks.example.com/vulns"
   }
 
-  event_config = {
+  vulnerability_config = {
     level = "High"
+  }
+}
+
+# Email notification for main-branch build successes only
+resource "quay_repository_notification" "main_build_email" {
+  repository = quay_repository.example.id
+  event      = "build_success"
+  title      = "Main branch build succeeded"
+
+  email = {
+    email = "team@example.com"
+  }
+
+  build_config = {
+    ref_regex = "refs/heads/main"
   }
 }

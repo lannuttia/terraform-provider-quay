@@ -3,12 +3,12 @@
 page_title: "quay_repository_notification Resource - quay"
 subcategory: ""
 description: |-
-  Manages a notification (webhook) on a Quay repository. Because the Quay API has no update endpoint for notifications, any change to notification attributes will cause the existing notification to be deleted and a new one created.
+  Manages a notification on a Quay repository. Because the Quay API has no update endpoint for notifications, any change to notification attributes will cause the existing notification to be deleted and a new one created. Exactly one method block (webhook, slack, email, hipchat, flowdock, or quay_notification) must be provided. For vulnerability_found events supply a vulnerability_config block; for build events an optional build_config block may be supplied.
 ---
 
 # quay_repository_notification (Resource)
 
-Manages a notification (webhook) on a Quay repository. Because the Quay API has no update endpoint for notifications, any change to notification attributes will cause the existing notification to be deleted and a new one created.
+Manages a notification on a Quay repository. Because the Quay API has no update endpoint for notifications, any change to notification attributes will cause the existing notification to be deleted and a new one created. Exactly one method block (webhook, slack, email, hipchat, flowdock, or quay_notification) must be provided. For vulnerability_found events supply a vulnerability_config block; for build events an optional build_config block may be supplied.
 
 ## Example Usage
 
@@ -28,43 +28,51 @@ resource "quay_repository" "example" {
 resource "quay_repository_notification" "push_webhook" {
   repository = quay_repository.example.id
   event      = "repo_push"
-  method     = "webhook"
   title      = "Push notification"
 
-  config = {
+  webhook = {
     url = "https://hooks.example.com/quay"
   }
-
-  event_config = {}
 }
 
 # Slack alert for build failures
 resource "quay_repository_notification" "build_failure_slack" {
   repository = quay_repository.example.id
   event      = "build_failure"
-  method     = "slack"
   title      = "Build failure alert"
 
-  config = {
+  slack = {
     url = "https://hooks.slack.com/services/T00000/B00000/XXXXXXXXXXXX"
   }
-
-  event_config = {}
 }
 
 # Webhook for High severity (and above) vulnerability findings
 resource "quay_repository_notification" "vuln_webhook" {
   repository = quay_repository.example.id
   event      = "vulnerability_found"
-  method     = "webhook"
   title      = "High+ vulnerability alert"
 
-  config = {
+  webhook = {
     url = "https://hooks.example.com/vulns"
   }
 
-  event_config = {
+  vulnerability_config = {
     level = "High"
+  }
+}
+
+# Email notification for main-branch build successes only
+resource "quay_repository_notification" "main_build_email" {
+  repository = quay_repository.example.id
+  event      = "build_success"
+  title      = "Main branch build succeeded"
+
+  email = {
+    email = "team@example.com"
+  }
+
+  build_config = {
+    ref_regex = "refs/heads/main"
   }
 }
 ```
@@ -74,21 +82,86 @@ resource "quay_repository_notification" "vuln_webhook" {
 
 ### Required
 
-- `config` (Map of String) Method-specific configuration. For webhook/slack: set 'url'. For email: set 'email'. For hipchat: set 'notification_token' and 'room_id'. For flowdock: set 'flow_api_token'.
 - `event` (String) The event that triggers this notification. One of: repo_push, build_queued, build_start, build_success, build_failure, build_cancelled, vulnerability_found, repo_mirror_sync_started, repo_mirror_sync_success, repo_mirror_sync_failed.
-- `method` (String) The notification delivery method. One of: webhook, email, slack, hipchat, flowdock, quay_notification.
 - `repository` (String) The repository this notification belongs to, in namespace/name format.
 
 ### Optional
 
-- `event_config` (Map of String) Event-specific configuration. For vulnerability_found, set 'level' to a severity string (e.g. 'High'). For build events, optionally set 'ref-regex'.
+- `build_config` (Attributes) Event configuration for build events (build_queued, build_start, build_success, build_failure, build_cancelled). (see [below for nested schema](#nestedatt--build_config))
+- `email` (Attributes) Deliver notifications by email. (see [below for nested schema](#nestedatt--email))
+- `flowdock` (Attributes) Deliver notifications to a Flowdock flow. (see [below for nested schema](#nestedatt--flowdock))
+- `hipchat` (Attributes) Deliver notifications to a HipChat room. (see [below for nested schema](#nestedatt--hipchat))
+- `quay_notification` (Attributes) Deliver notifications via the built-in Quay notification system. (see [below for nested schema](#nestedatt--quay_notification))
+- `slack` (Attributes) Deliver notifications to a Slack channel via an Incoming Webhook URL. (see [below for nested schema](#nestedatt--slack))
 - `title` (String) A human-readable title for the notification.
+- `vulnerability_config` (Attributes) Event configuration for vulnerability_found events. (see [below for nested schema](#nestedatt--vulnerability_config))
+- `webhook` (Attributes) Deliver notifications via an HTTP POST to a URL. (see [below for nested schema](#nestedatt--webhook))
 
 ### Read-Only
 
 - `id` (String) The resource identifier (repository/uuid).
 - `number_of_failures` (Number) The number of consecutive delivery failures.
 - `uuid` (String) The server-assigned UUID of the notification.
+
+<a id="nestedatt--build_config"></a>
+### Nested Schema for `build_config`
+
+Optional:
+
+- `ref_regex` (String) A regular expression that Git refs must match to trigger the notification.
+
+
+<a id="nestedatt--email"></a>
+### Nested Schema for `email`
+
+Required:
+
+- `email` (String) The recipient email address.
+
+
+<a id="nestedatt--flowdock"></a>
+### Nested Schema for `flowdock`
+
+Required:
+
+- `flow_api_token` (String) The Flowdock flow API token.
+
+
+<a id="nestedatt--hipchat"></a>
+### Nested Schema for `hipchat`
+
+Required:
+
+- `notification_token` (String) The HipChat API notification token.
+- `room_id` (String) The HipChat room ID.
+
+
+<a id="nestedatt--quay_notification"></a>
+### Nested Schema for `quay_notification`
+
+
+<a id="nestedatt--slack"></a>
+### Nested Schema for `slack`
+
+Required:
+
+- `url` (String) The Slack Incoming Webhook URL.
+
+
+<a id="nestedatt--vulnerability_config"></a>
+### Nested Schema for `vulnerability_config`
+
+Required:
+
+- `level` (String) The minimum vulnerability severity level that triggers the notification. One of: Low, Medium, High, Critical.
+
+
+<a id="nestedatt--webhook"></a>
+### Nested Schema for `webhook`
+
+Required:
+
+- `url` (String) The URL to POST the notification payload to.
 
 ## Import
 

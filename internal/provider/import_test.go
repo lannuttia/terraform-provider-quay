@@ -228,11 +228,9 @@ resource "quay_repository" "test" {
 }
 resource "quay_repository_notification" "test" {
   repository   = quay_repository.test.id
-  event        = "repo_push"
-  method       = "webhook"
-  title        = "import test"
-  config       = { url = "https://httpbin.org/post" }
-  event_config = {}
+  event   = "repo_push"
+  title   = "import test"
+  webhook = { url = "https://httpbin.org/post" }
 }
 `, orgName)
 	resource.Test(t, resource.TestCase{
@@ -266,11 +264,9 @@ resource "quay_repository" "test" {
 }
 resource "quay_repository_notification" "test" {
   repository   = quay_repository.test.id
-  event        = "repo_push"
-  method       = "webhook"
-  title        = "import test"
-  config       = { url = "https://httpbin.org/post" }
-  event_config = {}
+  event   = "repo_push"
+  title   = "import test"
+  webhook = { url = "https://httpbin.org/post" }
 }
 `, orgName)
 	resource.Test(t, resource.TestCase{
@@ -304,11 +300,9 @@ resource "quay_repository" "test" {
 }
 resource "quay_repository_notification" "test" {
   repository   = quay_repository.test.id
-  event        = "repo_push"
-  method       = "webhook"
-  title        = "import test"
-  config       = { url = "https://httpbin.org/post" }
-  event_config = {}
+  event   = "repo_push"
+  title   = "import test"
+  webhook = { url = "https://httpbin.org/post" }
 }
 `, orgName)
 	resource.Test(t, resource.TestCase{
@@ -442,11 +436,9 @@ resource "quay_repository" "test" {
 }
 resource "quay_repository_notification" "test" {
   repository   = quay_repository.test.id
-  event        = "repo_push"
-  method       = "webhook"
-  title        = "import error test"
-  config       = { url = "https://httpbin.org/post" }
-  event_config = {}
+  event   = "repo_push"
+  title   = "import error test"
+  webhook = { url = "https://httpbin.org/post" }
 }
 `, orgName)
 	resource.Test(t, resource.TestCase{
@@ -480,11 +472,9 @@ resource "quay_repository" "test" {
 }
 resource "quay_repository_notification" "test" {
   repository   = quay_repository.test.id
-  event        = "repo_push"
-  method       = "webhook"
-  title        = "import error test"
-  config       = { url = "https://httpbin.org/post" }
-  event_config = {}
+  event   = "repo_push"
+  title   = "import error test"
+  webhook = { url = "https://httpbin.org/post" }
 }
 `, orgName)
 	resource.Test(t, resource.TestCase{
