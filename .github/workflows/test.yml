@@ -13,6 +13,24 @@ on:
 permissions:
   contents: read
 
+# Reusable step definitions ─────────────────────────────────────────────────
+#
+# YAML anchors are used here so that each action appears exactly once.
+# To update an action version, change only the anchored definition below.
+
+x-steps:
+  - &checkout
+    uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  - &nix-install
+    uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+  - &nix-cache
+    uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
+  - &setup-go
+    uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+    with:
+      go-version-file: "go.mod"
+      cache: true
+
 jobs:
   # ── Build & lint (via Nix dev shell) ─────────────────────────────────────
   build:
@@ -20,10 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
-      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
+      - *checkout
+      - *nix-install
+      - *nix-cache
 
       - name: Build
         run: nix develop --command go build -v .
@@ -37,10 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
-      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
+      - *checkout
+      - *nix-install
+      - *nix-cache
 
       - name: Vet
         run: nix develop --command go vet ./...
@@ -70,12 +86,8 @@ jobs:
           - "1.13.*"
           - "1.14.*"
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - *checkout
+      - *setup-go
 
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
