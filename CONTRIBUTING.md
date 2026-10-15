@@ -172,6 +172,21 @@ Every new resource or data source should have:
   values, schema validation) can use `resource.UnitTest` and do not need a live
   Quay instance.
 
+### CI pipeline
+
+The CI pipeline uses a hybrid approach:
+
+| Job | Tooling | Reason |
+|---|---|---|
+| Build, lint | Nix dev shell | Exact same Go and golangci-lint versions as local dev |
+| Unit tests | Nix dev shell | Consistent Go version |
+| Acceptance tests | `actions/setup-go` + `hashicorp/setup-terraform` | Tests a matrix of Terraform CLI versions the flake doesn't model |
+| Release | `actions/setup-go` + `goreleaser-action` | GPG signing handled separately; unchanged |
+
+The Nix jobs use `DeterminateSystems/nix-installer-action` and
+`DeterminateSystems/magic-nix-cache-action` to install Nix and share the
+binary cache across runs, keeping cold-start overhead low.
+
 ---
 
 ## Documentation

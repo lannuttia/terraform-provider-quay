@@ -14,30 +14,24 @@ permissions:
   contents: read
 
 jobs:
-  # ── Build & lint ──────────────────────────────────────────────────────────
+  # ── Build & lint (via Nix dev shell) ─────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: true
-
-      - run: go mod download
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
 
       - name: Build
-        run: go build -v .
+        run: nix develop --command go build -v .
 
       - name: Lint
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          version: latest
+        run: nix develop --command golangci-lint run
 
-  # ── Vet & unit tests (no Docker required) ────────────────────────────────
+  # ── Vet & unit tests (via Nix dev shell) ─────────────────────────────────
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -45,24 +39,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: true
-
-      - run: go mod download
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+      - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
 
       - name: Vet
-        run: go vet ./...
+        run: nix develop --command go vet ./...
 
       - name: Unit tests (with race detection)
-        run: go test -race -v -count=1 -timeout 120s ./internal/client/...
+        run: nix develop --command go test -race -v -count=1 -timeout 120s ./internal/client/...
 
       # Provider schema-validation tests run without TF_ACC and need no live Quay.
       - name: Provider schema tests (with race detection)
-        run: go test -race -v -count=1 -timeout 120s ./internal/provider/...
+        run: nix develop --command go test -race -v -count=1 -timeout 120s ./internal/provider/...
 
   # ── Acceptance tests against a live Quay testcontainer ───────────────────
+  #
+  # These jobs intentionally do not use the Nix dev shell — their purpose is
+  # to verify compatibility across multiple Terraform CLI versions, which the
+  # flake does not model. Go is sourced from go.mod via actions/setup-go.
   acceptance:
     name: "Acceptance Tests: Terraform ${{ matrix.terraform }}"
     needs: build
