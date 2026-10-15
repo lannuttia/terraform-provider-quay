@@ -36,14 +36,7 @@ nix develop
 ```
 
 The shell provides: `go`, `golangci-lint`, `goimports`, `gopls`, `terraform`,
-`goreleaser`, `pre-commit`, and `git`.
-
-Entering the shell also runs `pre-commit install --install-hooks` automatically,
-so git hooks are active from the first commit. Because the hooks use
-`language: system`, they call the tools already in the shell — **commits made
-outside the dev shell will fail hook checks** for any hook that requires a tool
-not available on the system `PATH`. Use `direnv allow` or `nix develop` before
-committing.
+`goreleaser`, and `git`.
 
 ### Option B — manual
 
@@ -82,6 +75,31 @@ The two packages under `internal/` have a clear boundary:
 - **`provider`** — the Terraform Plugin Framework layer. It translates between
   Terraform state and the client. Tests here are acceptance tests that require a
   live Quay instance (provided automatically by testcontainers).
+
+---
+
+## Pre-commit hooks
+
+The repository ships a `.pre-commit-config.yaml` with hooks for formatting,
+vetting, module hygiene, and linting. The Go hooks use `language: golang` so
+pre-commit manages its own isolated tool environments — no dependency on the
+Nix shell or any particular system installation.
+
+Install the hooks once after cloning:
+
+```shell
+pre-commit install --install-hooks
+```
+
+Run all hooks manually at any time:
+
+```shell
+pre-commit run --all-files
+```
+
+You need [pre-commit](https://pre-commit.com/#install) and `go` on your
+`PATH`. Everything else (`goimports`, `golangci-lint`) is fetched and cached
+by pre-commit automatically.
 
 ---
 
