@@ -36,7 +36,14 @@ nix develop
 ```
 
 The shell provides: `go`, `golangci-lint`, `goimports`, `gopls`, `terraform`,
-`goreleaser`, and `git`.
+`goreleaser`, `pre-commit`, and `git`.
+
+Entering the shell also runs `pre-commit install --install-hooks` automatically,
+so git hooks are active from the first commit. Because the hooks use
+`language: system`, they call the tools already in the shell — **commits made
+outside the dev shell will fail hook checks** for any hook that requires a tool
+not available on the system `PATH`. Use `direnv allow` or `nix develop` before
+committing.
 
 ### Option B — manual
 
