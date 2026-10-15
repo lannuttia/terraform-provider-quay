@@ -10,6 +10,9 @@ terraform-provider-quay
 crash.log
 crash.*.log
 
+# Direnv
+.direnv/
+
 # Go build cache
 vendor/
 
