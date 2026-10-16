@@ -442,52 +442,29 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 	state.NumberOfFailures = types.Int64Value(int64(notif.NumberOfFailures))
 	state.ID = types.StringValue(fmt.Sprintf("%s/%s", repository, notif.UUID))
 
-	// Populate the method block that matches the API response.
+	// Clear all method blocks, then populate only the one that matches.
+	state.Webhook = nil
+	state.Slack = nil
+	state.Email = nil
+	state.Hipchat = nil
+	state.Flowdock = nil
+	state.QuayNotification = nil
+
 	switch notif.Method {
 	case "webhook":
 		state.Webhook = &WebhookConfig{URL: types.StringValue(stringFromConfig(notif.Config, "url"))}
-		state.Slack = nil
-		state.Email = nil
-		state.Hipchat = nil
-		state.Flowdock = nil
-		state.QuayNotification = nil
 	case "slack":
-		state.Webhook = nil
 		state.Slack = &SlackConfig{URL: types.StringValue(stringFromConfig(notif.Config, "url"))}
-		state.Email = nil
-		state.Hipchat = nil
-		state.Flowdock = nil
-		state.QuayNotification = nil
 	case "email":
-		state.Webhook = nil
-		state.Slack = nil
 		state.Email = &EmailConfig{Email: types.StringValue(stringFromConfig(notif.Config, "email"))}
-		state.Hipchat = nil
-		state.Flowdock = nil
-		state.QuayNotification = nil
 	case "hipchat":
-		state.Webhook = nil
-		state.Slack = nil
-		state.Email = nil
 		state.Hipchat = &HipchatConfig{
 			NotificationToken: types.StringValue(stringFromConfig(notif.Config, "notification_token")),
 			RoomID:            types.StringValue(stringFromConfig(notif.Config, "room_id")),
 		}
-		state.Flowdock = nil
-		state.QuayNotification = nil
 	case "flowdock":
-		state.Webhook = nil
-		state.Slack = nil
-		state.Email = nil
-		state.Hipchat = nil
 		state.Flowdock = &FlowdockConfig{FlowAPIToken: types.StringValue(stringFromConfig(notif.Config, "flow_api_token"))}
-		state.QuayNotification = nil
 	case "quay_notification":
-		state.Webhook = nil
-		state.Slack = nil
-		state.Email = nil
-		state.Hipchat = nil
-		state.Flowdock = nil
 		state.QuayNotification = &QuayNotificationConfig{}
 	default:
 		diags.AddError("Unknown Notification Method",
@@ -496,21 +473,19 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 		return diags
 	}
 
-	// Populate the event config block.
+	// Clear all event config blocks, then populate only the one that matches.
+	state.VulnerabilityConfig = nil
+	state.BuildConfig = nil
+
 	switch {
 	case len(notif.EventConfig) > 0 && notif.EventConfig["level"] != nil:
 		state.VulnerabilityConfig = &VulnerabilityEventConfig{
 			Level: types.StringValue(fmt.Sprintf("%v", notif.EventConfig["level"])),
 		}
-		state.BuildConfig = nil
 	case len(notif.EventConfig) > 0 && notif.EventConfig["ref-regex"] != nil:
 		state.BuildConfig = &BuildEventConfig{
 			RefRegex: types.StringValue(fmt.Sprintf("%v", notif.EventConfig["ref-regex"])),
 		}
-		state.VulnerabilityConfig = nil
-	default:
-		state.VulnerabilityConfig = nil
-		state.BuildConfig = nil
 	}
 
 	return diags
