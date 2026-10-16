@@ -2,7 +2,10 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -20,8 +23,9 @@ type QuayProvider struct {
 }
 
 type QuayProviderModel struct {
-	URL   types.String `tfsdk:"url"`
-	Token types.String `tfsdk:"token"`
+	URL     types.String `tfsdk:"url"`
+	Token   types.String `tfsdk:"token"`
+	Timeout types.Int64  `tfsdk:"timeout"`
 }
 
 func New(version string) func() provider.Provider {
@@ -47,6 +51,10 @@ func (p *QuayProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp 
 				Optional:    true,
 				Sensitive:   true,
 				Description: "OAuth bearer token for authenticating with the Quay API. Can also be set via the QUAY_TOKEN environment variable.",
+			},
+			"timeout": schema.Int64Attribute{
+				Optional:    true,
+				Description: fmt.Sprintf("HTTP client timeout in seconds. Defaults to %d. Set to 0 to disable the timeout. Can also be set via the QUAY_TIMEOUT environment variable.", int(client.DefaultTimeout.Seconds())),
 			},
 		},
 	}
@@ -77,7 +85,23 @@ func (p *QuayProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	c := client.New(url, token)
+	timeout := client.DefaultTimeout
+	if raw := os.Getenv("QUAY_TIMEOUT"); raw != "" {
+		secs, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid QUAY_TIMEOUT",
+				fmt.Sprintf("QUAY_TIMEOUT must be an integer number of seconds, got %q: %s", raw, err),
+			)
+			return
+		}
+		timeout = time.Duration(secs) * time.Second
+	}
+	if !config.Timeout.IsNull() && !config.Timeout.IsUnknown() {
+		timeout = time.Duration(config.Timeout.ValueInt64()) * time.Second
+	}
+
+	c := client.New(url, token, timeout)
 	resp.DataSourceData = c
 	resp.ResourceData = c
 }
