@@ -47,11 +47,6 @@ func (c *Client) withRetryDelay(f func(attempt int) time.Duration) *Client {
 	return &copy
 }
 
-// NewTestClient creates a client with zero retry delays, for use in tests only.
-func NewTestClient(baseURL, token string) *Client {
-	return New(baseURL, token).withRetryDelay(func(int) time.Duration { return 0 })
-}
-
 // BaseURL returns the base URL this client is configured to talk to.
 func (c *Client) BaseURL() string {
 	return c.baseURL

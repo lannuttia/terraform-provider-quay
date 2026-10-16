@@ -112,7 +112,7 @@ func skipIfNoAcc(t *testing.T) {
 
 // quayClient returns a Quay API client pointed at the shared test instance.
 func quayClient() *client.Client {
-	return client.NewTestClient(testState.quayURL, testState.quayToken)
+	return client.New(testState.quayURL, testState.quayToken)
 }
 
 // checkOrganizationDestroyed returns a TestCheckFunc that fails if the named
