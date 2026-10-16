@@ -20,7 +20,7 @@ type CreateNotificationRequest struct {
 	Event       string         `json:"event"`
 	Method      string         `json:"method"`
 	Config      map[string]any `json:"config"`
-	EventConfig map[string]any `json:"event_config"`
+	EventConfig map[string]any `json:"eventConfig"`
 	Title       string         `json:"title,omitempty"`
 }
 
