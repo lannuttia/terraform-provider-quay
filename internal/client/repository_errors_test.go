@@ -104,18 +104,17 @@ func TestChangeRepositoryVisibility_NotFound(t *testing.T) {
 }
 
 func TestChangeRepositoryVisibility_InvalidValue(t *testing.T) {
-	// The API returns 400 for an unrecognised visibility value.
+	// The client now rejects unrecognised visibility values before making any
+	// HTTP request, so no test server is needed.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"message": "Invalid visibility value",
-		})
+		t.Error("HTTP request should not have been made for an invalid visibility value")
 	})
 	err := c.ChangeRepositoryVisibility(context.Background(), "myorg/repo",
 		client.ChangeVisibilityRequest{Visibility: "invalid"})
 	if err == nil {
 		t.Fatal("expected error for invalid visibility, got nil")
 	}
-	if !strings.Contains(err.Error(), "400") {
-		t.Errorf("expected 400 in error, got: %v", err)
+	if !strings.Contains(err.Error(), "invalid visibility") {
+		t.Errorf("expected 'invalid visibility' in error, got: %v", err)
 	}
 }

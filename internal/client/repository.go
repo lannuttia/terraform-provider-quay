@@ -5,6 +5,17 @@ import (
 	"fmt"
 )
 
+// Visibility values accepted by the Quay API.
+const (
+	VisibilityPublic  = "public"
+	VisibilityPrivate = "private"
+)
+
+var validVisibilities = map[string]bool{
+	VisibilityPublic:  true,
+	VisibilityPrivate: true,
+}
+
 // Repository represents a Quay repository.
 type Repository struct {
 	Namespace   string `json:"namespace"`
@@ -54,6 +65,9 @@ func (c *Client) UpdateRepository(ctx context.Context, repository string, req Up
 }
 
 func (c *Client) ChangeRepositoryVisibility(ctx context.Context, repository string, req ChangeVisibilityRequest) error {
+	if !validVisibilities[req.Visibility] {
+		return fmt.Errorf("invalid visibility %q: must be %q or %q", req.Visibility, VisibilityPublic, VisibilityPrivate)
+	}
 	if err := c.post(ctx, fmt.Sprintf("repository/%s/changevisibility", repository), req, nil); err != nil {
 		return fmt.Errorf("changing visibility of repository %q: %w", repository, err)
 	}
