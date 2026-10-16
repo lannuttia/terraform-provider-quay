@@ -1,11 +1,20 @@
 name: Release
 
-# Triggers on every push to main. release-please decides whether a new release
-# is warranted by scanning conventional commits since the last tag.
+# Waits for the Tests and Snyk workflows to pass on main before running
+# release-please. This ensures we never cut a release from a broken commit.
+#
+# workflow_run is the only mechanism that creates a cross-workflow ordering
+# dependency within the same repository. Both named workflows must complete
+# successfully (conclusion == success) for this workflow to start.
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Tests
+      - Snyk
     branches:
       - main
+    types:
+      - completed
 
 # release-please needs write access to open/update the Release PR and create
 # tags. goreleaser needs it to upload release assets. id-token and attestations
@@ -17,6 +26,28 @@ permissions:
   attestations: write
 
 jobs:
+  # ── Guard: only proceed when all triggering workflows succeeded ───────────
+  #
+  # workflow_run fires on every completion (success *and* failure). This job
+  # exits early if the triggering run did not succeed, so release-please and
+  # goreleaser never run on a broken commit.
+  check:
+    name: Check workflow result
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should_release: ${{ steps.guard.outputs.should_release }}
+    steps:
+      - name: Guard on success
+        id: guard
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "Triggering workflow did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }}). Skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── Release PR management ─────────────────────────────────────────────────
   #
   # release-please scans conventional commits since the last tag, computes
@@ -28,8 +59,11 @@ jobs:
   # updates CHANGELOG.md — it does NOT create the GitHub Release object.
   # goreleaser owns that responsibility, which avoids asset-upload race
   # conditions between the two tools.
+  #
   release-please:
     name: Release Please
+    needs: check
+    if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
