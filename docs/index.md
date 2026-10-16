@@ -54,6 +54,7 @@ variable "quay_token" {
 
 ### Optional
 
+- `timeout` (Number) HTTP client timeout in seconds. Defaults to 30. Set to 0 to disable the timeout. Can also be set via the QUAY_TIMEOUT environment variable.
 - `token` (String, Sensitive) OAuth bearer token for authenticating with the Quay API. Can also be set via the QUAY_TOKEN environment variable.
 - `url` (String) The base URL of the Quay instance. Defaults to https://quay.io. Can also be set via the QUAY_URL environment variable.
 

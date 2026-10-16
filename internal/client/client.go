@@ -15,6 +15,9 @@ import (
 
 const defaultBaseURL = "https://quay.io"
 
+// DefaultTimeout is the HTTP client timeout used when none is specified.
+const DefaultTimeout = 30 * time.Second
+
 // Client is a Quay API client.
 type Client struct {
 	baseURL    string
@@ -23,8 +26,9 @@ type Client struct {
 	retryDelay func(attempt int) time.Duration
 }
 
-// New creates a new Quay API client.
-func New(baseURL, token string) *Client {
+// New creates a new Quay API client. timeout is applied to every HTTP request;
+// pass 0 to disable the timeout entirely.
+func New(baseURL, token string, timeout time.Duration) *Client {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
@@ -32,7 +36,7 @@ func New(baseURL, token string) *Client {
 	return &Client{
 		baseURL:    baseURL,
 		token:      token,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{Timeout: timeout},
 		retryDelay: func(attempt int) time.Duration {
 			return time.Duration(attempt) * time.Second
 		},
