@@ -63,9 +63,7 @@ release:
   extra_files:
     - glob: "terraform-registry-manifest.json"
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
-  # release-please creates a draft GitHub Release; goreleaser uploads assets
-  # and publishes it. Setting draft: false here un-drafts the release once
-  # all assets are attached.
+  # GoReleaser creates the GitHub Release and uploads all assets.
   draft: false
   make_latest: true
   # Point users to CHANGELOG.md for the full structured release notes.
