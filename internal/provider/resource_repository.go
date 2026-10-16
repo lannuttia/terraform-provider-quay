@@ -163,7 +163,7 @@ func (r *RepositoryResource) Update(ctx context.Context, req resource.UpdateRequ
 			resp.Diagnostics.AddError("Error Changing Repository Visibility", err.Error())
 			return
 		}
-		repo.IsPublic = plan.Visibility.ValueString() == "public"
+		repo.IsPublic = plan.Visibility.ValueString() == client.VisibilityPublic
 	}
 
 	r.mapToState(repo, &plan)
@@ -201,9 +201,9 @@ func (r *RepositoryResource) mapToState(repo *client.Repository, state *Reposito
 	state.Name = types.StringValue(repo.Name)
 	state.Description = types.StringValue(repo.Description)
 	if repo.IsPublic {
-		state.Visibility = types.StringValue("public")
+		state.Visibility = types.StringValue(client.VisibilityPublic)
 	} else {
-		state.Visibility = types.StringValue("private")
+		state.Visibility = types.StringValue(client.VisibilityPrivate)
 	}
 	state.ID = types.StringValue(fmt.Sprintf("%s/%s", repo.Namespace, repo.Name))
 }

@@ -91,9 +91,9 @@ func (d *RepositoryDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	state.Name = types.StringValue(repo.Name)
 	state.Description = types.StringValue(repo.Description)
 	if repo.IsPublic {
-		state.Visibility = types.StringValue("public")
+		state.Visibility = types.StringValue(client.VisibilityPublic)
 	} else {
-		state.Visibility = types.StringValue("private")
+		state.Visibility = types.StringValue(client.VisibilityPrivate)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
