@@ -1,11 +1,14 @@
 name: Release
 
-# Waits for the Tests workflow to pass on main before running release-please.
-# This ensures we never cut a release from a broken commit.
+# Runs after Tests pass on main. release-please manages the Release PR and,
+# when that PR is merged, creates the git tag and GitHub Release. GoReleaser
+# then builds multi-platform binaries, signs checksums, and uploads all assets
+# to the existing GitHub Release.
 #
-# workflow_run is the only mechanism that creates a cross-workflow ordering
-# dependency within the same repository. The named workflow must complete
-# successfully (conclusion == success) for this workflow to start.
+# Both jobs run in the same workflow so that the release_created and tag_name
+# outputs from release-please are available to goreleaser in the same run.
+# GoReleaser uses release.mode: keep-existing in .goreleaser.yml so it uploads
+# assets without overwriting the release notes that release-please wrote.
 on:
   workflow_run:
     workflows:
@@ -15,9 +18,6 @@ on:
     types:
       - completed
 
-# release-please needs write access to open/update the Release PR and create
-# tags. goreleaser needs it to upload release assets. id-token and attestations
-# are required for build provenance attestation.
 permissions:
   contents: write
   pull-requests: write
@@ -25,11 +25,7 @@ permissions:
   attestations: write
 
 jobs:
-  # ── Guard: only proceed when all triggering workflows succeeded ───────────
-  #
-  # workflow_run fires on every completion (success *and* failure). This job
-  # exits early if the triggering run did not succeed, so release-please and
-  # goreleaser never run on a broken commit.
+  # ── Guard: only proceed when Tests succeeded ───────────────────────────────
   check:
     name: Check workflow result
     runs-on: ubuntu-latest
@@ -47,18 +43,7 @@ jobs:
             echo "should_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # ── Release PR management ─────────────────────────────────────────────────
-  #
-  # release-please scans conventional commits since the last tag, computes
-  # the next SemVer, updates CHANGELOG.md, and opens (or updates) a Release PR.
-  # When that PR is merged, it creates the git tag and then sets
-  # release_created=true so the goreleaser job below can run.
-  #
-  # skip-github-release=true means release-please only creates the tag and
-  # updates CHANGELOG.md — it does NOT create the GitHub Release object.
-  # goreleaser owns that responsibility, which avoids asset-upload race
-  # conditions between the two tools.
-  #
+  # ── Release PR management ──────────────────────────────────────────────────
   release-please:
     name: Release Please
     needs: check
@@ -72,23 +57,17 @@ jobs:
       - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
         id: release
         with:
-          # RELEASE_PLEASE_TOKEN is a fine-grained PAT with Contents (write)
+          # RELASE_PLEASE_TOKEN is a fine-grained PAT with Contents (write)
           # and Pull requests (write) scopes. Using a PAT means the PR is
           # opened under a real user identity, which allows pull_request_target
           # workflows (e.g. Validate PR title) to trigger on release PRs.
           # GITHUB_TOKEN is blocked from triggering those workflows on its own
           # PRs to prevent recursive automation loops.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: ${{ secrets.RELASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # goreleaser creates the GitHub Release; release-please only tags.
-          skip-github-release: true
 
-  # ── Multi-platform build & publish ───────────────────────────────────────
-  #
-  # Runs only when release-please just created a new tag (i.e. the Release PR
-  # was merged). goreleaser builds binaries for all target platforms, signs
-  # the checksums, and creates the GitHub Release with all assets.
+  # ── Multi-platform build & publish ────────────────────────────────────────
   goreleaser:
     name: GoReleaser
     needs: release-please
@@ -98,10 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # GoReleaser needs the full git history to build changelogs and to
-          # identify commits belonging to this release.
           fetch-depth: 0
-          # Check out the exact tag release-please just created.
           ref: ${{ needs.release-please.outputs.tag_name }}
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -124,10 +100,7 @@ jobs:
         with:
           args: release --clean
         env:
-          # GITHUB_TOKEN is automatically provided by GitHub Actions.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # GPG_FINGERPRINT comes from the import_gpg step above and is
-          # referenced in .goreleaser.yml signs[].args.
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
       - name: Attest build provenance

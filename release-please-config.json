@@ -16,6 +16,8 @@
     { "type": "style", "section": "Maintenance", "hidden": true }
   ],
   "packages": {
-    ".": {}
+    ".": {
+      "draft": true
+    }
   }
 }
