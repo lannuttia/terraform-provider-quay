@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.3](https://github.com/lannuttia/terraform-provider-quay/compare/v0.2.2...v0.2.3) (2026-10-16)
+
+
+### Features
+
+* add configurable HTTP client timeout ([#6](https://github.com/lannuttia/terraform-provider-quay/issues/6)) ([a0769e9](https://github.com/lannuttia/terraform-provider-quay/commit/a0769e9bab3da70135ad866c11b70687b6e006cd))
+
+
+### Bug Fixes
+
+* only trigger release on Tests workflow completion ([#5](https://github.com/lannuttia/terraform-provider-quay/issues/5)) ([d4228cc](https://github.com/lannuttia/terraform-provider-quay/commit/d4228cc9b105c8266fa718866a4764cfb72cee8c))
+
 ## [0.2.2](https://github.com/lannuttia/terraform-provider-quay/compare/v0.2.1...v0.2.2) (2026-10-16)
 
 
