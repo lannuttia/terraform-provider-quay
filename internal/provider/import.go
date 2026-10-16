@@ -13,7 +13,7 @@ import (
 // splitImportID splits an import ID by "/" and returns exactly n parts,
 // or adds an error diagnostic if the count doesn't match.
 func splitImportID(resp *resource.ImportStateResponse, id string, n int, example string) ([]string, diag.Diagnostics) {
-	parts := strings.SplitN(id, "/", n)
+	parts := strings.Split(id, "/")
 	if len(parts) != n {
 		resp.Diagnostics.AddError(
 			"Invalid Import ID",
