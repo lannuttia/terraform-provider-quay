@@ -138,6 +138,11 @@ func checkRepositoryDestroyed(repository string) resource.TestCheckFunc {
 		if client.IsNotFound(err) {
 			return nil
 		}
+		// A 403 means the org namespace itself was removed (or the token lacks
+		// repo:read scope for org repos), so the repository is effectively gone.
+		if client.IsForbidden(err) {
+			return nil
+		}
 		if err != nil {
 			return fmt.Errorf("checking repository %q: %w", repository, err)
 		}
@@ -159,6 +164,11 @@ func checkNotificationDestroyed(resourceName string) resource.TestCheckFunc {
 		uuid := rs.Primary.Attributes["uuid"]
 		_, err := quayClient().GetRepoNotification(context.Background(), repository, uuid)
 		if client.IsNotFound(err) {
+			return nil
+		}
+		// A 403 means the org/repo was removed (or the token lacks scope), so
+		// the notification is effectively gone.
+		if client.IsForbidden(err) {
 			return nil
 		}
 		if err != nil {

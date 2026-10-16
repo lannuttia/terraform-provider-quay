@@ -80,6 +80,15 @@ func IsNotFound(err error) bool {
 	return false
 }
 
+// IsForbidden returns true if the error chain contains a 403 Forbidden APIError.
+func IsForbidden(err error) bool {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode == http.StatusForbidden
+	}
+	return false
+}
+
 func (c *Client) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
 	u, err := url.JoinPath(c.baseURL, "/api/v1/", path)
 	if err != nil {
