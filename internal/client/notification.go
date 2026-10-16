@@ -16,6 +16,9 @@ type Notification struct {
 	NumberOfFailures int            `json:"number_of_failures,omitempty"`
 }
 
+// CreateNotificationRequest is the request body for creating a notification.
+// Note: the Quay API uses camelCase "eventConfig" in request bodies but
+// snake_case "event_config" in response bodies.
 type CreateNotificationRequest struct {
 	Event       string         `json:"event"`
 	Method      string         `json:"method"`
