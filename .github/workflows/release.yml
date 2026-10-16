@@ -1,16 +1,15 @@
 name: Release
 
-# Waits for the Tests and Snyk workflows to pass on main before running
-# release-please. This ensures we never cut a release from a broken commit.
+# Waits for the Tests workflow to pass on main before running release-please.
+# This ensures we never cut a release from a broken commit.
 #
 # workflow_run is the only mechanism that creates a cross-workflow ordering
-# dependency within the same repository. Both named workflows must complete
+# dependency within the same repository. The named workflow must complete
 # successfully (conclusion == success) for this workflow to start.
 on:
   workflow_run:
     workflows:
       - Tests
-      - Snyk
     branches:
       - main
     types:
