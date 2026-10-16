@@ -1,13 +1,14 @@
 name: GoReleaser
 
-# Runs when release-please publishes a GitHub Release (i.e. after the Release
-# PR is merged and the tag + Release object are created). GoReleaser builds
-# multi-platform binaries, signs the checksums, and uploads all assets to the
-# existing GitHub Release.
+# Runs when release-please creates a draft GitHub Release (i.e. after the
+# Release PR is merged and the tag is created). GoReleaser builds multi-platform
+# binaries, signs checksums, uploads all assets, then publishes the release.
+# Using a draft means the release is never publicly visible until all assets
+# are attached — the Terraform Registry won't index an incomplete release.
 on:
   release:
     types:
-      - published
+      - created
 
 permissions:
   contents: write
