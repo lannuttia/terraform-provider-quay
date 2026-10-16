@@ -158,7 +158,7 @@ func TestEmptyToken_StillSendsRequest(t *testing.T) {
 		t.Logf("Authorization header received: %q", r.Header.Get("Authorization"))
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"message": "no token"})
 	})
-	c := client.New(srv.URL, "")
+	c := client.New(srv.URL, "", 0)
 	_, err := c.GetRepository(context.Background(), "org/repo")
 	if err == nil {
 		t.Fatal("expected 401 error for empty token, got nil")

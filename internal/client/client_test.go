@@ -3,9 +3,11 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/lannuttia/terraform-provider-quay/internal/client"
 )
@@ -52,6 +54,31 @@ func TestIsNotFound_False(t *testing.T) {
 	}
 	if client.IsNotFound(err) {
 		t.Errorf("expected IsNotFound=false, got true for %v", err)
+	}
+}
+
+// ----- Authorization header -----------------------------------------------
+
+// ----- Timeout ------------------------------------------------------------
+
+func TestTimeout(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Block long enough for a short timeout to fire.
+		time.Sleep(500 * time.Millisecond)
+		writeJSON(w, http.StatusOK, client.Repository{Namespace: "org", Name: "repo"})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.New(srv.URL, "test-token", 50*time.Millisecond)
+	_, err := c.GetRepository(context.Background(), "org/repo")
+	if err == nil {
+		t.Fatal("expected timeout error, got nil")
+	}
+	// The error should be a context / deadline exceeded or a net timeout — not
+	// an APIError, since the server never responded.
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) {
+		t.Errorf("expected a transport-level timeout error, got APIError: %v", apiErr)
 	}
 }
 
