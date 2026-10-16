@@ -42,8 +42,7 @@ jobs:
             The subject "{subject}" found in the PR title "{title}" must start
             with a lowercase letter. Please rewrite it to match the Conventional
             Commits spec (https://www.conventionalcommits.org/).
-          # When a PR has exactly one commit, GitHub may use that commit message
-          # instead of the PR title on squash merge. Validate that they match so
-          # the squash commit is always a valid conventional commit.
-          validateSingleCommit: true
-          validateSingleCommitMatchesPrTitle: true
+          # The branch ruleset enforces squash-only merges, so the PR title is
+          # always used as the commit message on main — regardless of how many
+          # commits the PR contains. Validating the title here is sufficient to
+          # guarantee every commit on main is a valid conventional commit.
