@@ -7,8 +7,11 @@ on:
       - "v*"
 
 # Releases need write access to create the GitHub Release and upload assets.
+# id-token and attestations are required for build provenance attestation.
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   goreleaser:
@@ -46,3 +49,8 @@ jobs:
           # GPG_FINGERPRINT comes from the import_gpg step above and is
           # referenced in .goreleaser.yml signs[].args.
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.zip
