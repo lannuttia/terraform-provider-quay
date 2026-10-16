@@ -63,25 +63,16 @@ release:
   extra_files:
     - glob: "terraform-registry-manifest.json"
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
-  # Uncomment to hold the release as a draft for manual review before publishing:
-  # draft: true
+  # release-please creates the git tag but skips creating the GitHub Release
+  # (skip-github-release: true in the workflow). goreleaser creates the Release
+  # from scratch here, which avoids asset-upload race conditions.
+  draft: false
+  make_latest: true
+  # Point users to CHANGELOG.md for the full structured release notes.
+  footer: |
+    **Full changelog**: https://github.com/lannuttia/terraform-provider-quay/blob/{{ .Tag }}/CHANGELOG.md
 
 changelog:
-  use: github
-  sort: asc
-  groups:
-    - title: "Features"
-      regexp: '^feat(\(.+\))?!?:.+'
-      order: 0
-    - title: "Bug Fixes"
-      regexp: '^fix(\(.+\))?!?:.+'
-      order: 1
-    - title: "Documentation"
-      regexp: '^docs(\(.+\))?!?:.+'
-      order: 2
-    - title: "Maintenance"
-      regexp: '^(chore|refactor|style|build|ci|perf|test)(\(.+\))?!?:.+'
-      order: 3
-  filters:
-    exclude:
-      - "^Merge "
+  # release-please owns CHANGELOG.md and generates structured release notes.
+  # Disable goreleaser's changelog so it doesn't duplicate or overwrite them.
+  disable: true

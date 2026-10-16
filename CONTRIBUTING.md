@@ -213,7 +213,12 @@ files in `docs/` by hand.
 ## Commit messages and pull requests
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).
-The PR title is validated automatically by CI and must follow the format:
+The branch ruleset enforces squash-only merges, so the **PR title becomes the
+commit message on `main`** for every PR, regardless of how many commits it
+contains. CI validates the PR title and blocks merge if it is not a valid
+conventional commit.
+
+The title must follow the format:
 
 ```
 <type>(<optional scope>): <subject starting with a lowercase letter>
@@ -222,31 +227,51 @@ The PR title is validated automatically by CI and must follow the format:
 Accepted types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
 `build`, `ci`, `chore`, `revert`.
 
-When a PR contains a single commit, GitHub may use that commit message as the
-squash-merge commit. In that case the commit message must match the PR title —
-CI enforces this.
+Individual commits within a PR branch do not need to follow this format — only
+the PR title matters, since that is what lands on `main`.
 
 ---
 
 ## Releasing
 
-Releases are automated. Maintainers create and push a semantic version tag;
-the `release.yml` workflow handles the rest.
+Releases are fully automated via [release-please](https://github.com/googleapis/release-please)
+and [GoReleaser](https://goreleaser.com/). **No manual tagging required.**
 
-```shell
-git tag v0.3.0
-git push origin v0.3.0
-```
+### How it works
 
-GoReleaser builds binaries for all target platforms, signs the checksums with
-the repository GPG key, generates a changelog from conventional commits, and
-creates a GitHub Release. The Terraform Registry picks up the release
-automatically via its GitHub webhook.
+1. Every merge to `main` triggers the `release.yml` workflow.
+2. **release-please** scans conventional commits since the last release and
+   opens (or updates) a **Release PR** containing the computed next version,
+   an updated `CHANGELOG.md`, and a bump to `.release-please-manifest.json`.
+3. When a maintainer **merges the Release PR**, release-please creates the git
+   tag (e.g. `v0.3.0`).
+4. The same workflow detects the new tag and runs **GoReleaser**, which:
+   - Builds binaries for all target platforms
+   - Signs checksums with the repository GPG key
+   - Creates the GitHub Release and uploads all assets
+5. The Terraform Registry picks up the release automatically via its GitHub
+   webhook within a few minutes.
+
+### Commit type → version bump mapping
+
+| Commit prefix | Example | SemVer bump |
+|---|---|---|
+| `fix:` | `fix: handle nil pointer in auth` | patch (0.2.0 → 0.2.1) |
+| `feat:` | `feat: add robot accounts resource` | minor (0.2.0 → 0.3.0) |
+| `feat!:` / `BREAKING CHANGE:` | `feat!: remove deprecated endpoint` | major (0.2.0 → 1.0.0) |
+| `chore:`, `ci:`, `docs:`, `test:`, `refactor:` | — | no release |
+
+### Updating the provider version constraint in docs
+
+When a new minor version is released (e.g. `v0.3.0`), update the version
+constraint in `examples/provider/provider.tf` from `~> 0.2` to `~> 0.3` as
+part of a follow-up PR. The CI docs-drift check will catch any mismatch between
+the example files and the generated `docs/` output.
 
 ### First-time release setup
 
-The following one-time steps are required before the first release from a new
-repository fork or clone.
+The following one-time steps are required before the automated release pipeline
+can run successfully from a new repository fork or clone.
 
 #### 1. Generate a GPG signing key
 

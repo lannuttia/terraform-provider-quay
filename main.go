@@ -1,5 +1,5 @@
 // Generate provider documentation with tfplugindocs.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name quay
+//go:generate go tool tfplugindocs generate --provider-name quay
 
 package main
 

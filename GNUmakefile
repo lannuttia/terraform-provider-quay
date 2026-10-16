@@ -2,7 +2,7 @@ HOSTNAME    = registry.terraform.io
 NAMESPACE   = lannuttia
 NAME        = quay
 BINARY      = terraform-provider-$(NAME)
-VERSION     = 0.1.0
+VERSION     ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
 
 OS_ARCH     = $(shell go env GOOS)_$(shell go env GOARCH)
 
@@ -11,6 +11,11 @@ default: build
 .PHONY: generate
 generate:
 	go generate ./...
+
+.PHONY: generate-check
+generate-check: generate
+	@git diff --exit-code docs/ examples/ templates/ || \
+		(echo "\nGenerated docs are out of sync. Run 'make generate' and commit the result." && exit 1)
 
 .PHONY: build
 build:
