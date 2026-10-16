@@ -63,9 +63,7 @@ release:
   extra_files:
     - glob: "terraform-registry-manifest.json"
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
-  # release-please creates the git tag but skips creating the GitHub Release
-  # (skip-github-release: true in the workflow). goreleaser creates the Release
-  # from scratch here, which avoids asset-upload race conditions.
+  # release-please creates the GitHub Release; goreleaser uploads assets to it.
   draft: false
   make_latest: true
   # Point users to CHANGELOG.md for the full structured release notes.
