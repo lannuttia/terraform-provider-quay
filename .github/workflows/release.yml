@@ -57,13 +57,13 @@ jobs:
       - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
         id: release
         with:
-          # RELASE_PLEASE_TOKEN is a fine-grained PAT with Contents (write)
+          # RELEASE_PLEASE_TOKEN is a fine-grained PAT with Contents (write)
           # and Pull requests (write) scopes. Using a PAT means the PR is
           # opened under a real user identity, which allows pull_request_target
           # workflows (e.g. Validate PR title) to trigger on release PRs.
           # GITHUB_TOKEN is blocked from triggering those workflows on its own
           # PRs to prevent recursive automation loops.
-          token: ${{ secrets.RELASE_PLEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
