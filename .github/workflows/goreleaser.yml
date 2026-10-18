@@ -1,15 +1,14 @@
 name: GoReleaser
 
-# Triggered when release-please creates a draft GitHub Release. GitHub creates
-# the git tag atomically with the release object, so the tag exists before the
-# webhook fires. The runner provisioning delay adds further buffer, making it
-# safe for GoReleaser to check out the tag without a race condition.
-# GoReleaser uploads assets to the draft and then publishes it, ensuring the
-# release is never publicly visible until all assets are attached.
+# Triggered when a draft GitHub Release created by release-please is published.
+# GitHub creates the git tag atomically with the release object, so the tag
+# exists before the webhook fires. The runner provisioning delay adds further
+# buffer, making it safe for GoReleaser to check out the tag without a race
+# condition. GoReleaser uploads assets to the release after it is published.
 on:
   release:
     types:
-      - created
+      - published
 
 permissions:
   contents: write
