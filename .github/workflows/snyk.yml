@@ -23,7 +23,7 @@ jobs:
           cache: true
 
       - name: Install Snyk CLI
-        uses: snyk/actions/setup@aa6e70d07856828c0902d53c649eb82dea5e04be
+        uses: snyk/actions/setup@11b673cfb4b0dc0d860a1323caa199d54950dcce
 
       - name: Run Snyk monitor
         run: snyk monitor --org=lannuttia --project-name=github.com/lannuttia/terraform-provider-quay
