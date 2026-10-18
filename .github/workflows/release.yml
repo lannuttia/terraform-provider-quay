@@ -9,6 +9,11 @@ name: Release
 # outputs from release-please are available to goreleaser in the same run.
 # GoReleaser uses release.mode: keep-existing in .goreleaser.yml so it uploads
 # assets without overwriting the release notes that release-please wrote.
+#
+# On re-runs (e.g. after a transient GoReleaser failure), release-please will
+# output nothing because the tag already exists. The resolve-tag job handles
+# this by falling back to the latest draft GitHub Release to find the tag name,
+# so GoReleaser can still run successfully on retry.
 on:
   workflow_run:
     workflows:
@@ -67,18 +72,58 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # ── Resolve tag for GoReleaser ─────────────────────────────────────────────
+  # On a normal run, release-please creates the tag and surfaces it via
+  # tag_name. On a re-run (GoReleaser failed previously), release-please
+  # outputs nothing because the tag already exists. In that case, fall back to
+  # the latest draft release to find the tag so GoReleaser can still run.
+  resolve-tag:
+    name: Resolve tag
+    needs: [check, release-please]
+    if: needs.check.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+      should_goreleaser: ${{ steps.resolve.outputs.should_goreleaser }}
+    steps:
+      - name: Resolve tag name
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PLEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+          RELEASE_PLEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+        run: |
+          if [ "${RELEASE_PLEASE_CREATED}" = "true" ]; then
+            echo "tag_name=${RELEASE_PLEASE_TAG}" >> "$GITHUB_OUTPUT"
+            echo "should_goreleaser=true" >> "$GITHUB_OUTPUT"
+          else
+            # On a re-run, look for a draft release that still needs assets uploaded.
+            DRAFT_TAG=$(gh api repos/${{ github.repository }}/releases \
+              --jq '[.[] | select(.draft == true)] | first | .tag_name // ""')
+            if [ -n "${DRAFT_TAG}" ]; then
+              echo "No release-please output; found existing draft release ${DRAFT_TAG} — retrying GoReleaser."
+              echo "tag_name=${DRAFT_TAG}" >> "$GITHUB_OUTPUT"
+              echo "should_goreleaser=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "No release-please output and no draft release found. Nothing to do."
+              echo "tag_name=" >> "$GITHUB_OUTPUT"
+              echo "should_goreleaser=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
   # ── Multi-platform build & publish ────────────────────────────────────────
   goreleaser:
     name: GoReleaser
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: resolve-tag
+    if: needs.resolve-tag.outputs.should_goreleaser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.resolve-tag.outputs.tag_name }}
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
