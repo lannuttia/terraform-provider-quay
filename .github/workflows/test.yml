@@ -30,7 +30,7 @@ jobs:
         run: pipx run check-jsonschema==0.38.2 --builtin-schema custom.github-workflows-require-timeout .github/workflows/*.yml
 
       - name: Validate dependabot config
-        run: pipx run check-jsonschema==0.38.2 --schemafile https://www.schemastore.org/dependabot-2.0.json .github/dependabot.yml
+        run: pipx run check-jsonschema==0.38.2 --builtin-schema vendor.dependabot .github/dependabot.yml
 
       - name: Validate release-please config
         run: pipx run check-jsonschema==0.38.2 --schemafile https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json release-please-config.json
