@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/lannuttia/terraform-provider-quay/compare/v0.3.1...v0.4.0) (2026-10-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* replace event string with typed event blocks ([#22](https://github.com/lannuttia/terraform-provider-quay/issues/22))
+
+### Features
+
+* replace event string with typed event blocks ([#22](https://github.com/lannuttia/terraform-provider-quay/issues/22)) ([ca99469](https://github.com/lannuttia/terraform-provider-quay/commit/ca99469f4c9b142e6fd7b77dd857fdeb265c4a9b))
+
 ## [0.3.1](https://github.com/lannuttia/terraform-provider-quay/compare/v0.3.0...v0.3.1) (2026-10-18)
 
 
