@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.1...v0.5.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* upgrade release-please-action to v5.0.0 ([#33](https://github.com/lannuttia/terraform-provider-quay/issues/33)) ([e998a5d](https://github.com/lannuttia/terraform-provider-quay/commit/e998a5d245208cafbee05ecd89f1302835a1b4e5))
+
 ## [0.5.1](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.0...v0.5.1) (2026-10-18)
 
 
