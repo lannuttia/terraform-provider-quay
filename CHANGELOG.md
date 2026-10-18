@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.0...v0.5.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* use draft releases with force-tag-creation for Terraform Registry compatibility ([#30](https://github.com/lannuttia/terraform-provider-quay/issues/30)) ([40de26a](https://github.com/lannuttia/terraform-provider-quay/commit/40de26a1d46931f66cddc5090223dcb6c3fc6942))
+
 ## [0.5.0](https://github.com/lannuttia/terraform-provider-quay/compare/v0.4.2...v0.5.0) (2026-10-18)
 
 
