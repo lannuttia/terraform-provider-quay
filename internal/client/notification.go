@@ -5,42 +5,12 @@ import (
 	"fmt"
 )
 
-// VulnerabilityLevel is the minimum severity that triggers a vulnerability_found notification.
-type VulnerabilityLevel string
-
-const (
-	VulnerabilityLevelLow      VulnerabilityLevel = "Low"
-	VulnerabilityLevelMedium   VulnerabilityLevel = "Medium"
-	VulnerabilityLevelHigh     VulnerabilityLevel = "High"
-	VulnerabilityLevelCritical VulnerabilityLevel = "Critical"
-)
-
-// VulnerabilityLevels returns all valid VulnerabilityLevel values in ascending severity order.
-func VulnerabilityLevels() []VulnerabilityLevel {
-	return []VulnerabilityLevel{
-		VulnerabilityLevelLow,
-		VulnerabilityLevelMedium,
-		VulnerabilityLevelHigh,
-		VulnerabilityLevelCritical,
-	}
-}
-
-// EventConfig holds the event-specific configuration returned by the Quay API.
-type EventConfig map[string]any
-
-// VulnerabilityLevel extracts the vulnerability severity level from the event
-// config. Returns an empty string if the key is absent.
-func (e EventConfig) VulnerabilityLevel() VulnerabilityLevel {
-	v, _ := e["level"]
-	return VulnerabilityLevel(fmt.Sprintf("%v", v))
-}
-
 // Notification represents a Quay repository notification.
 type Notification struct {
 	UUID             string         `json:"uuid"`
 	Title            string         `json:"title,omitempty"`
 	Event            string         `json:"event"`
-	EventConfig      EventConfig    `json:"event_config"`
+	EventConfig      map[string]any `json:"event_config"`
 	Method           string         `json:"method"`
 	Config           map[string]any `json:"config"`
 	NumberOfFailures int            `json:"number_of_failures,omitempty"`
