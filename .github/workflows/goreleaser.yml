@@ -1,14 +1,13 @@
 name: GoReleaser
 
-# Triggered when a draft GitHub Release created by release-please is published.
-# GitHub creates the git tag atomically with the release object, so the tag
-# exists before the webhook fires. The runner provisioning delay adds further
-# buffer, making it safe for GoReleaser to check out the tag without a race
-# condition. GoReleaser uploads assets to the release after it is published.
+# Triggered when a version tag is pushed (e.g. v1.2.3). This covers both the
+# normal flow where release-please pushes the tag after merging the release PR,
+# and the manual flow where a tag is pushed directly. GoReleaser creates or
+# updates the GitHub Release and uploads all assets.
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -24,7 +23,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: ${{ github.event.release.tag_name }}
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
