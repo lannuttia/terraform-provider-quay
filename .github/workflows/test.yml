@@ -24,10 +24,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Validate GitHub workflow files
-        run: pipx run check-jsonschema==0.38.2 --builtin-schema vendor.github-workflows .github/workflows/*.yml
+        run: pipx run pre-commit run --all-files check-github-workflows
 
       - name: Require timeout-minutes on all jobs
-        run: pipx run check-jsonschema==0.38.2 --builtin-schema custom.github-workflows-require-timeout .github/workflows/*.yml
+        run: pipx run pre-commit run --all-files check-github-workflows-require-timeout
+
+      - name: Validate dependabot config
+        run: pipx run pre-commit run --all-files check-dependabot
 
   # ── Build & lint ──────────────────────────────────────────────────────────
   build:
