@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/lannuttia/terraform-provider-quay/compare/v0.3.0...v0.3.1) (2026-10-18)
+
+
+### Documentation
+
+* correct v0.3.0 changelog entry to remove duplicate v0.2.2 changes ([#14](https://github.com/lannuttia/terraform-provider-quay/issues/14)) ([4c9c7a3](https://github.com/lannuttia/terraform-provider-quay/commit/4c9c7a371c4c886d29002a612d7fd7bd8140def2))
+
 ## [0.3.0](https://github.com/lannuttia/terraform-provider-quay/compare/v0.2.2...v0.3.0) (2026-10-17)
 
 No user-facing changes. This release was generated due to a release-please tracking issue caused by a missing v0.2.2 git tag.
