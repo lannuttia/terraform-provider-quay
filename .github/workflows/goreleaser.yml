@@ -1,12 +1,13 @@
 name: GoReleaser
 
-# Triggered when release-please publishes a GitHub Release (which it does
-# automatically after creating the draft). By this point the git tag is
-# guaranteed to exist, so GoReleaser can check it out without a race condition.
+# Triggered when release-please creates a draft GitHub Release. By this point
+# the git tag is guaranteed to exist, so GoReleaser can check it out without a
+# race condition. GoReleaser uploads assets to the draft and then publishes it,
+# ensuring the release is never publicly visible until all assets are attached.
 on:
   release:
     types:
-      - published
+      - created
 
 permissions:
   contents: write
