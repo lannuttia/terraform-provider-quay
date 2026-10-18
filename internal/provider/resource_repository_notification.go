@@ -35,7 +35,6 @@ type RepositoryNotificationResourceModel struct {
 	Repository       types.String `tfsdk:"repository"`
 	UUID             types.String `tfsdk:"uuid"`
 	Title            types.String `tfsdk:"title"`
-	Event            types.String `tfsdk:"event"`
 	NumberOfFailures types.Int64  `tfsdk:"number_of_failures"`
 
 	// Exactly one method block must be set.
@@ -46,9 +45,18 @@ type RepositoryNotificationResourceModel struct {
 	Flowdock         *FlowdockConfig         `tfsdk:"flowdock"`
 	QuayNotification *QuayNotificationConfig `tfsdk:"quay_notification"`
 
-	// At most one event config block may be set, depending on the event.
-	VulnerabilityConfig *VulnerabilityEventConfig `tfsdk:"vulnerability_config"`
-	BuildConfig         *BuildEventConfig         `tfsdk:"build_config"`
+	// Exactly one event block must be set. Event-specific config lives inside
+	// each block, making invalid combinations structurally impossible.
+	RepoPush              *RepoPushEvent              `tfsdk:"repo_push"`
+	BuildQueued           *BuildEvent                 `tfsdk:"build_queued"`
+	BuildStart            *BuildEvent                 `tfsdk:"build_start"`
+	BuildSuccess          *BuildEvent                 `tfsdk:"build_success"`
+	BuildFailure          *BuildEvent                 `tfsdk:"build_failure"`
+	BuildCancelled        *BuildEvent                 `tfsdk:"build_cancelled"`
+	VulnerabilityFound    *VulnerabilityFoundEvent    `tfsdk:"vulnerability_found"`
+	RepoMirrorSyncStarted *RepoMirrorSyncStartedEvent `tfsdk:"repo_mirror_sync_started"`
+	RepoMirrorSyncSuccess *RepoMirrorSyncSuccessEvent `tfsdk:"repo_mirror_sync_success"`
+	RepoMirrorSyncFailed  *RepoMirrorSyncFailedEvent  `tfsdk:"repo_mirror_sync_failed"`
 }
 
 // Method config types
@@ -74,19 +82,25 @@ type FlowdockConfig struct {
 	FlowAPIToken types.String `tfsdk:"flow_api_token"`
 }
 
-type QuayNotificationConfig struct {
-	// Quay internal notifications carry no extra config fields.
+type QuayNotificationConfig struct{}
+
+// Event types
+// Events with no configuration use an empty struct so the block is still
+// present in the schema and self-documents that no options exist.
+
+type RepoPushEvent struct{}
+
+type BuildEvent struct {
+	RefRegex types.String `tfsdk:"ref_regex"`
 }
 
-// Event config types
-
-type VulnerabilityEventConfig struct {
+type VulnerabilityFoundEvent struct {
 	Level types.String `tfsdk:"level"`
 }
 
-type BuildEventConfig struct {
-	RefRegex types.String `tfsdk:"ref_regex"`
-}
+type RepoMirrorSyncStartedEvent struct{}
+type RepoMirrorSyncSuccessEvent struct{}
+type RepoMirrorSyncFailedEvent struct{}
 
 // -------------------------------------------------------------------------
 // Constructor / metadata
@@ -104,16 +118,28 @@ func (r *RepositoryNotificationResource) Metadata(_ context.Context, req resourc
 // Schema
 // -------------------------------------------------------------------------
 
+// buildEventAttributes returns the shared attribute set for all build event blocks.
+func buildEventAttributes(requiresReplace []planmodifier.String) map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"ref_regex": schema.StringAttribute{
+			Optional:      true,
+			Description:   "A regular expression that Git refs must match to trigger the notification.",
+			PlanModifiers: requiresReplace,
+		},
+	}
+}
+
 func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	requiresReplace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
+	requiresReplaceStr := []planmodifier.String{stringplanmodifier.RequiresReplace()}
+	requiresReplaceObj := []planmodifier.Object{objectplanmodifier.RequiresReplace()}
 
 	resp.Schema = schema.Schema{
 		Description: "Manages a notification on a Quay repository. " +
 			"Because the Quay API has no update endpoint for notifications, any change to notification " +
 			"attributes will cause the existing notification to be deleted and a new one created. " +
 			"Exactly one method block (webhook, slack, email, hipchat, flowdock, or quay_notification) " +
-			"must be provided. For vulnerability_found events supply a vulnerability_config block; " +
-			"for build events an optional build_config block may be supplied.",
+			"must be provided. Exactly one event block must be provided; event-specific configuration " +
+			"(such as the vulnerability severity level or a build ref regex) lives inside that block.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -125,7 +151,7 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 			"repository": schema.StringAttribute{
 				Required:      true,
 				Description:   "The repository this notification belongs to, in namespace/name format.",
-				PlanModifiers: requiresReplace,
+				PlanModifiers: requiresReplaceStr,
 			},
 			"uuid": schema.StringAttribute{
 				Computed:    true,
@@ -138,26 +164,7 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 				Optional:      true,
 				Computed:      true,
 				Description:   "A human-readable title for the notification.",
-				PlanModifiers: append(requiresReplace, stringplanmodifier.UseStateForUnknown()),
-			},
-			"event": schema.StringAttribute{
-				Required:    true,
-				Description: "The event that triggers this notification. One of: repo_push, build_queued, build_start, build_success, build_failure, build_cancelled, vulnerability_found, repo_mirror_sync_started, repo_mirror_sync_success, repo_mirror_sync_failed.",
-				Validators: []validator.String{
-					stringvalidator.OneOf(
-						"repo_push",
-						"build_queued",
-						"build_start",
-						"build_success",
-						"build_failure",
-						"build_cancelled",
-						"vulnerability_found",
-						"repo_mirror_sync_started",
-						"repo_mirror_sync_success",
-						"repo_mirror_sync_failed",
-					),
-				},
-				PlanModifiers: requiresReplace,
+				PlanModifiers: append(requiresReplaceStr, stringplanmodifier.UseStateForUnknown()),
 			},
 			"number_of_failures": schema.Int64Attribute{
 				Computed:    true,
@@ -169,81 +176,120 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 			"webhook": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications via an HTTP POST to a URL.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"url": schema.StringAttribute{
 						Required:      true,
 						Description:   "The URL to POST the notification payload to.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
 			"slack": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications to a Slack channel via an Incoming Webhook URL.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"url": schema.StringAttribute{
 						Required:      true,
 						Description:   "The Slack Incoming Webhook URL.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
 			"email": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications by email.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"email": schema.StringAttribute{
 						Required:      true,
 						Description:   "The recipient email address.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
 			"hipchat": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications to a HipChat room.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"notification_token": schema.StringAttribute{
 						Required:      true,
 						Description:   "The HipChat API notification token.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 					"room_id": schema.StringAttribute{
 						Required:      true,
 						Description:   "The HipChat room ID.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
 			"flowdock": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications to a Flowdock flow.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"flow_api_token": schema.StringAttribute{
 						Required:      true,
 						Description:   "The Flowdock flow API token.",
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
 			"quay_notification": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "Deliver notifications via the built-in Quay notification system.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				PlanModifiers: requiresReplaceObj,
 				Attributes:    map[string]schema.Attribute{},
 			},
 
-			// ----- event config blocks -----
+			// ----- event blocks -----
+			// Exactly one must be set (enforced by ConfigValidators).
+			// Event-specific config is nested inside the relevant block,
+			// making it impossible to supply config for the wrong event type.
 
-			"vulnerability_config": schema.SingleNestedAttribute{
+			"repo_push": schema.SingleNestedAttribute{
 				Optional:      true,
-				Description:   "Event configuration for vulnerability_found events.",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
+				Description:   "Trigger on every image push to the repository.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    map[string]schema.Attribute{},
+			},
+			"build_queued": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a build is queued.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    buildEventAttributes(requiresReplaceStr),
+			},
+			"build_start": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a build starts.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    buildEventAttributes(requiresReplaceStr),
+			},
+			"build_success": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a build succeeds.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    buildEventAttributes(requiresReplaceStr),
+			},
+			"build_failure": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a build fails.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    buildEventAttributes(requiresReplaceStr),
+			},
+			"build_cancelled": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a build is cancelled.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    buildEventAttributes(requiresReplaceStr),
+			},
+			"vulnerability_found": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a vulnerability is found. The required level attribute sets the minimum severity that triggers the notification.",
+				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"level": schema.StringAttribute{
 						Required:    true,
@@ -251,27 +297,34 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 						Validators: []validator.String{
 							stringvalidator.OneOf("Low", "Medium", "High", "Critical"),
 						},
-						PlanModifiers: requiresReplace,
+						PlanModifiers: requiresReplaceStr,
 					},
 				},
 			},
-			"build_config": schema.SingleNestedAttribute{
+			"repo_mirror_sync_started": schema.SingleNestedAttribute{
 				Optional:      true,
-				Description:   "Event configuration for build events (build_queued, build_start, build_success, build_failure, build_cancelled).",
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplace()},
-				Attributes: map[string]schema.Attribute{
-					"ref_regex": schema.StringAttribute{
-						Optional:      true,
-						Description:   "A regular expression that Git refs must match to trigger the notification.",
-						PlanModifiers: requiresReplace,
-					},
-				},
+				Description:   "Trigger when a repository mirror sync starts.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    map[string]schema.Attribute{},
+			},
+			"repo_mirror_sync_success": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a repository mirror sync succeeds.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    map[string]schema.Attribute{},
+			},
+			"repo_mirror_sync_failed": schema.SingleNestedAttribute{
+				Optional:      true,
+				Description:   "Trigger when a repository mirror sync fails.",
+				PlanModifiers: requiresReplaceObj,
+				Attributes:    map[string]schema.Attribute{},
 			},
 		},
 	}
 }
 
-// ConfigValidators enforces that exactly one method block is set.
+// ConfigValidators enforces that exactly one method block and exactly one
+// event block are set.
 func (r *RepositoryNotificationResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		resourcevalidator.ExactlyOneOf(
@@ -281,6 +334,18 @@ func (r *RepositoryNotificationResource) ConfigValidators(_ context.Context) []r
 			path.MatchRoot("hipchat"),
 			path.MatchRoot("flowdock"),
 			path.MatchRoot("quay_notification"),
+		),
+		resourcevalidator.ExactlyOneOf(
+			path.MatchRoot("repo_push"),
+			path.MatchRoot("build_queued"),
+			path.MatchRoot("build_start"),
+			path.MatchRoot("build_success"),
+			path.MatchRoot("build_failure"),
+			path.MatchRoot("build_cancelled"),
+			path.MatchRoot("vulnerability_found"),
+			path.MatchRoot("repo_mirror_sync_started"),
+			path.MatchRoot("repo_mirror_sync_success"),
+			path.MatchRoot("repo_mirror_sync_failed"),
 		),
 	}
 }
@@ -308,13 +373,13 @@ func (r *RepositoryNotificationResource) Create(ctx context.Context, req resourc
 		return
 	}
 
-	method, config := plan.methodAndConfig()
-	eventConfig := plan.eventConfig()
+	method, methodConfig := plan.methodAndConfig()
+	event, eventConfig := plan.eventAndConfig()
 
 	notif, err := r.client.CreateRepoNotification(ctx, plan.Repository.ValueString(), client.CreateNotificationRequest{
-		Event:       plan.Event.ValueString(),
+		Event:       event,
 		Method:      method,
-		Config:      config,
+		Config:      methodConfig,
 		EventConfig: eventConfig,
 		Title:       plan.Title.ValueString(),
 	})
@@ -414,21 +479,44 @@ func (m *RepositoryNotificationResourceModel) methodAndConfig() (string, map[str
 	}
 }
 
-// eventConfig derives the API event_config map from whichever event config
-// block is set in the plan (or an empty map if none is set).
-func (m *RepositoryNotificationResourceModel) eventConfig() map[string]any {
+// eventAndConfig derives the API event string and event_config map from
+// whichever event block is set in the plan.
+func (m *RepositoryNotificationResourceModel) eventAndConfig() (string, map[string]any) {
 	switch {
-	case m.VulnerabilityConfig != nil:
-		return map[string]any{"level": m.VulnerabilityConfig.Level.ValueString()}
-	case m.BuildConfig != nil:
-		cfg := map[string]any{}
-		if !m.BuildConfig.RefRegex.IsNull() && !m.BuildConfig.RefRegex.IsUnknown() {
-			cfg["ref-regex"] = m.BuildConfig.RefRegex.ValueString()
-		}
-		return cfg
+	case m.RepoPush != nil:
+		return "repo_push", map[string]any{}
+	case m.BuildQueued != nil:
+		return "build_queued", buildRefRegexConfig(m.BuildQueued.RefRegex)
+	case m.BuildStart != nil:
+		return "build_start", buildRefRegexConfig(m.BuildStart.RefRegex)
+	case m.BuildSuccess != nil:
+		return "build_success", buildRefRegexConfig(m.BuildSuccess.RefRegex)
+	case m.BuildFailure != nil:
+		return "build_failure", buildRefRegexConfig(m.BuildFailure.RefRegex)
+	case m.BuildCancelled != nil:
+		return "build_cancelled", buildRefRegexConfig(m.BuildCancelled.RefRegex)
+	case m.VulnerabilityFound != nil:
+		return "vulnerability_found", map[string]any{"level": m.VulnerabilityFound.Level.ValueString()}
+	case m.RepoMirrorSyncStarted != nil:
+		return "repo_mirror_sync_started", map[string]any{}
+	case m.RepoMirrorSyncSuccess != nil:
+		return "repo_mirror_sync_success", map[string]any{}
+	case m.RepoMirrorSyncFailed != nil:
+		return "repo_mirror_sync_failed", map[string]any{}
 	default:
-		return map[string]any{}
+		// ConfigValidators guarantees this is unreachable.
+		return "", map[string]any{}
 	}
+}
+
+// buildRefRegexConfig returns an event_config map for build events,
+// omitting the ref-regex key when the value is null or unknown.
+func buildRefRegexConfig(refRegex types.String) map[string]any {
+	cfg := map[string]any{}
+	if !refRegex.IsNull() && !refRegex.IsUnknown() {
+		cfg["ref-regex"] = refRegex.ValueString()
+	}
+	return cfg
 }
 
 // mapToState populates the model from a Notification API response.
@@ -438,7 +526,6 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 	state.Repository = types.StringValue(repository)
 	state.UUID = types.StringValue(notif.UUID)
 	state.Title = types.StringValue(notif.Title)
-	state.Event = types.StringValue(notif.Event)
 	state.NumberOfFailures = types.Int64Value(int64(notif.NumberOfFailures))
 	state.ID = types.StringValue(fmt.Sprintf("%s/%s", repository, notif.UUID))
 
@@ -473,22 +560,58 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 		return diags
 	}
 
-	// Clear all event config blocks, then populate only the one that matches.
-	state.VulnerabilityConfig = nil
-	state.BuildConfig = nil
+	// Clear all event blocks, then populate only the one that matches.
+	state.RepoPush = nil
+	state.BuildQueued = nil
+	state.BuildStart = nil
+	state.BuildSuccess = nil
+	state.BuildFailure = nil
+	state.BuildCancelled = nil
+	state.VulnerabilityFound = nil
+	state.RepoMirrorSyncStarted = nil
+	state.RepoMirrorSyncSuccess = nil
+	state.RepoMirrorSyncFailed = nil
 
-	switch {
-	case len(notif.EventConfig) > 0 && notif.EventConfig["level"] != nil:
-		state.VulnerabilityConfig = &VulnerabilityEventConfig{
+	switch notif.Event {
+	case "repo_push":
+		state.RepoPush = &RepoPushEvent{}
+	case "build_queued":
+		state.BuildQueued = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
+	case "build_start":
+		state.BuildStart = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
+	case "build_success":
+		state.BuildSuccess = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
+	case "build_failure":
+		state.BuildFailure = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
+	case "build_cancelled":
+		state.BuildCancelled = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
+	case "vulnerability_found":
+		state.VulnerabilityFound = &VulnerabilityFoundEvent{
 			Level: types.StringValue(fmt.Sprintf("%v", notif.EventConfig["level"])),
 		}
-	case len(notif.EventConfig) > 0 && notif.EventConfig["ref-regex"] != nil:
-		state.BuildConfig = &BuildEventConfig{
-			RefRegex: types.StringValue(fmt.Sprintf("%v", notif.EventConfig["ref-regex"])),
-		}
+	case "repo_mirror_sync_started":
+		state.RepoMirrorSyncStarted = &RepoMirrorSyncStartedEvent{}
+	case "repo_mirror_sync_success":
+		state.RepoMirrorSyncSuccess = &RepoMirrorSyncSuccessEvent{}
+	case "repo_mirror_sync_failed":
+		state.RepoMirrorSyncFailed = &RepoMirrorSyncFailedEvent{}
+	default:
+		diags.AddError("Unknown Notification Event",
+			fmt.Sprintf("The Quay API returned an unrecognised notification event %q. "+
+				"Please report this as a provider bug.", notif.Event))
+		return diags
 	}
 
 	return diags
+}
+
+// refRegexFromEventConfig extracts the ref-regex value from a build event
+// config map, returning a null string when the key is absent.
+func refRegexFromEventConfig(eventConfig map[string]any) types.String {
+	if v, ok := eventConfig["ref-regex"]; ok {
+		return types.StringValue(fmt.Sprintf("%v", v))
+	}
+	return types.StringNull()
 }
 
 // stringFromConfig safely extracts a string value from a map[string]any.
