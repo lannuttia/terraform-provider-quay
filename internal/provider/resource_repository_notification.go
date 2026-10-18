@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -17,6 +18,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/lannuttia/terraform-provider-quay/internal/client"
 )
+
+// vulnerabilityLevelStrings returns the valid vulnerability level values as
+// plain strings, for use with stringvalidator.OneOf.
+func vulnerabilityLevelStrings() []string {
+	levels := client.VulnerabilityLevels()
+	out := make([]string, len(levels))
+	for i, l := range levels {
+		out[i] = string(l)
+	}
+	return out
+}
+
+// vulnerabilityLevelOneOfDescription returns a human-readable list of valid
+// vulnerability levels for use in schema descriptions.
+func vulnerabilityLevelOneOfDescription() string {
+	return strings.Join(vulnerabilityLevelStrings(), ", ") + "."
+}
 
 var _ resource.Resource = &RepositoryNotificationResource{}
 var _ resource.ResourceWithImportState = &RepositoryNotificationResource{}
@@ -292,11 +310,9 @@ func (r *RepositoryNotificationResource) Schema(_ context.Context, _ resource.Sc
 				PlanModifiers: requiresReplaceObj,
 				Attributes: map[string]schema.Attribute{
 					"level": schema.StringAttribute{
-						Required:    true,
-						Description: "The minimum vulnerability severity level that triggers the notification. One of: Low, Medium, High, Critical.",
-						Validators: []validator.String{
-							stringvalidator.OneOf("Low", "Medium", "High", "Critical"),
-						},
+						Required:      true,
+						Description:   "The minimum vulnerability severity level that triggers the notification. One of: " + vulnerabilityLevelOneOfDescription(),
+						Validators:    []validator.String{stringvalidator.OneOf(vulnerabilityLevelStrings()...)},
 						PlanModifiers: requiresReplaceStr,
 					},
 				},
@@ -496,7 +512,7 @@ func (m *RepositoryNotificationResourceModel) eventAndConfig() (string, map[stri
 	case m.BuildCancelled != nil:
 		return "build_cancelled", buildRefRegexConfig(m.BuildCancelled.RefRegex)
 	case m.VulnerabilityFound != nil:
-		return "vulnerability_found", map[string]any{"level": m.VulnerabilityFound.Level.ValueString()}
+		return "vulnerability_found", map[string]any{"level": client.VulnerabilityLevel(m.VulnerabilityFound.Level.ValueString())}
 	case m.RepoMirrorSyncStarted != nil:
 		return "repo_mirror_sync_started", map[string]any{}
 	case m.RepoMirrorSyncSuccess != nil:
@@ -587,7 +603,7 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 		state.BuildCancelled = &BuildEvent{RefRegex: refRegexFromEventConfig(notif.EventConfig)}
 	case "vulnerability_found":
 		state.VulnerabilityFound = &VulnerabilityFoundEvent{
-			Level: types.StringValue(fmt.Sprintf("%v", notif.EventConfig["level"])),
+			Level: types.StringValue(string(notif.EventConfig.VulnerabilityLevel())),
 		}
 	case "repo_mirror_sync_started":
 		state.RepoMirrorSyncStarted = &RepoMirrorSyncStartedEvent{}
@@ -606,8 +622,8 @@ func (r *RepositoryNotificationResource) mapToState(notif *client.Notification, 
 }
 
 // refRegexFromEventConfig extracts the ref-regex value from a build event
-// config map, returning a null string when the key is absent.
-func refRegexFromEventConfig(eventConfig map[string]any) types.String {
+// config, returning a null string when the key is absent.
+func refRegexFromEventConfig(eventConfig client.EventConfig) types.String {
 	if v, ok := eventConfig["ref-regex"]; ok {
 		return types.StringValue(fmt.Sprintf("%v", v))
 	}
