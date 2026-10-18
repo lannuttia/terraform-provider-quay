@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/lannuttia/terraform-provider-quay/compare/v0.4.0...v0.4.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* trigger GoReleaser on release published instead of created ([#25](https://github.com/lannuttia/terraform-provider-quay/issues/25)) ([0efaba2](https://github.com/lannuttia/terraform-provider-quay/commit/0efaba2758a61a729695672c73d5520b91125ae7))
+
 ## [0.4.0](https://github.com/lannuttia/terraform-provider-quay/compare/v0.3.1...v0.4.0) (2026-10-18)
 
 
