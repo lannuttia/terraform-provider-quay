@@ -59,3 +59,5 @@ release:
   replace_existing_artifacts: false
   use_existing_draft: true
   draft: false
+  preflight:
+    fail_on_error: true
