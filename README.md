@@ -4,9 +4,12 @@ A Terraform provider for managing resources on [Quay.io](https://quay.io) or a
 self-hosted [Red Hat Quay](https://www.redhat.com/en/technologies/cloud-computing/quay)
 instance.
 
-[![Continuous Integration](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml)
+[![Build](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/release/lannuttia/terraform-provider-quay.svg?style=flat)](https://github.com/lannuttia/terraform-provider-quay/releases/latest)
+[![Repository](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/lannuttia/terraform-provider-quay)
 [![Registry](https://img.shields.io/badge/Terraform%20Registry-lannuttia%2Fquay-623CE4)](https://registry.terraform.io/providers/lannuttia/quay/latest)
 ![Known Vulnerabilities](https://snyk.io/test/github/lannuttia/terraform-provider-quay/badge.svg)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat)](https://conventionalcommits.org)
 
 ## Documentation
 
