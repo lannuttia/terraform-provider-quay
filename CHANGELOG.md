@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.5](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.4...v0.5.5) (2026-10-19)
+
+
+### Bug Fixes
+
+* enable force-tag-creation and goreleaser preflight for immutable releases ([3233e05](https://github.com/lannuttia/terraform-provider-quay/commit/3233e05a9641ee419ec37dec48733a0636ba6a8b))
+
 ## [0.5.4](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.3...v0.5.4) (2026-10-19)
 
 
