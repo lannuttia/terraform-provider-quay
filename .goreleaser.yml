@@ -57,4 +57,5 @@ changelog:
 release:
   mode: append
   replace_existing_artifacts: false
-  replace_existing_draft: false
+  use_existing_draft: true
+  draft: false
