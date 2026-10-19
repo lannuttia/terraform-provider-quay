@@ -32,8 +32,8 @@ jobs:
         if: &release-created ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Checkout the exact commit that triggered the successful CI run
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Checkout the exact commit that the release tag points to
+          ref: ${{ steps.release.outputs.tag_name }}
           fetch-depth: 0
 
       - name: Set up Go
