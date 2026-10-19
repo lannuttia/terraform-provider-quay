@@ -103,7 +103,6 @@ jobs:
   # ── Acceptance tests against a live Quay testcontainer ───────────────────
   acceptance:
     name: "Acceptance Tests: Terraform ${{ matrix.terraform }}"
-    needs: unit
     runs-on: ubuntu-latest
     # Quay takes 2-5 minutes to start; tests themselves add more.
     timeout-minutes: 30
