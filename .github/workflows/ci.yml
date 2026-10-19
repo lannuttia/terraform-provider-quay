@@ -1,4 +1,4 @@
-name: Tests
+name: Continuous Integration
 
 on:
   pull_request:
@@ -103,7 +103,7 @@ jobs:
   # ── Acceptance tests against a live Quay testcontainer ───────────────────
   acceptance:
     name: "Acceptance Tests: Terraform ${{ matrix.terraform }}"
-    needs: build
+    needs: unit
     runs-on: ubuntu-latest
     # Quay takes 2-5 minutes to start; tests themselves add more.
     timeout-minutes: 30
@@ -138,30 +138,3 @@ jobs:
           # QUAY_URL: ${{ secrets.QUAY_URL }}
           # QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
         run: go test -race -v -count=1 -timeout 20m ./internal/provider/...
-
-  # ── Release PR management ─────────────────────────────────────────────────
-  # Only runs on push to main (not on PRs). Creates or updates the release PR
-  # via release-please. When the release PR is merged, release-please creates
-  # the git tag and draft GitHub Release; GoReleaser then picks it up via the
-  # release: published event in goreleaser.yml.
-  release-please:
-    name: Release Please
-    needs: [schema, build, docs, unit, acceptance]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        with:
-          # RELEASE_PLEASE_TOKEN is a fine-grained PAT with Contents (write)
-          # and Pull requests (write) scopes. Using a PAT means the PR is
-          # opened under a real user identity, which allows pull_request_target
-          # workflows (e.g. Validate PR title) to trigger on release PRs.
-          # GITHUB_TOKEN is blocked from triggering those workflows on its own
-          # PRs to prevent recursive automation loops.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
