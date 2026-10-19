@@ -6,6 +6,7 @@ instance.
 
 [![Continuous Integration](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml)
 [![Registry](https://img.shields.io/badge/Terraform%20Registry-lannuttia%2Fquay-623CE4)](https://registry.terraform.io/providers/lannuttia/quay/latest)
+![Known Vulnerabilities](https://snyk.io/test/github/lannuttia/terraform-provider-quay/badge.svg)
 
 ## Documentation
 
