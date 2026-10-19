@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.9](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.8...v0.5.9) (2026-10-19)
+
+
+### Bug Fixes
+
+* upload manifest.json as a release asset for Terraform Registry ([eaf7aa6](https://github.com/lannuttia/terraform-provider-quay/commit/eaf7aa6d1187794d7143b574875d67d588858f0f))
+
 ## [0.5.8](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.7...v0.5.8) (2026-10-19)
 
 
