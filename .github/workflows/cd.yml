@@ -66,4 +66,4 @@ jobs:
         if: *release-created
         uses: actions/attest@v4
         with:
-          subject-checksums: ./dist/${{ steps.release.outputs.version }}_SHA256SUMS
+          subject-checksums: ./dist/terraform-provider-quay_${{ steps.release.outputs.version }}_SHA256SUMS
