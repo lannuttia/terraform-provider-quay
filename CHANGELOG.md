@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.5...v0.5.6) (2026-10-19)
+
+
+### Bug Fixes
+
+* use release-please manifest mode to respect draft and force-tag-creation config ([3f415fd](https://github.com/lannuttia/terraform-provider-quay/commit/3f415fd2573ae3f8410f4bcd7a1e6ceadd94ba0f))
+
 ## [0.5.5](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.4...v0.5.5) (2026-10-19)
 
 
