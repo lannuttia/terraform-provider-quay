@@ -4,7 +4,7 @@ A Terraform provider for managing resources on [Quay.io](https://quay.io) or a
 self-hosted [Red Hat Quay](https://www.redhat.com/en/technologies/cloud-computing/quay)
 instance.
 
-[![Tests](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/test.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/test.yml)
+[![Continuous Integration](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml/badge.svg)](https://github.com/lannuttia/terraform-provider-quay/actions/workflows/ci.yml)
 [![Registry](https://img.shields.io/badge/Terraform%20Registry-lannuttia%2Fquay-623CE4)](https://registry.terraform.io/providers/lannuttia/quay/latest)
 
 ## Documentation
