@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.7](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.6...v0.5.7) (2026-10-19)
+
+
+### Bug Fixes
+
+* replace deprecated archives.format with archives.formats ([422b658](https://github.com/lannuttia/terraform-provider-quay/commit/422b658d51f3b1b43583c405a8364076e00742e5))
+* use literal path for subject-checksums in attest step ([1e4e796](https://github.com/lannuttia/terraform-provider-quay/commit/1e4e79682ccc63777f9bf84d7f29065321449266))
+* use literal path for subject-checksums in attest step ([0346bfb](https://github.com/lannuttia/terraform-provider-quay/commit/0346bfb2d8f4c09c067f9672f17b93961b3b8273))
+* use manifest mode by removing release-type from release-please action ([237f6fd](https://github.com/lannuttia/terraform-provider-quay/commit/237f6fd9e736114b00ad8f86434fdced47d8ea50))
+
 ## [0.5.6](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.5...v0.5.6) (2026-10-19)
 
 
