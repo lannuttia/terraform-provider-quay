@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.8](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.7...v0.5.8) (2026-10-19)
+
+
+### Bug Fixes
+
+* checkout release tag instead of workflow_run head_sha ([27033b6](https://github.com/lannuttia/terraform-provider-quay/commit/27033b6850f37e9be6ff12d4844e448d41d55f83))
+
 ## [0.5.7](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.6...v0.5.7) (2026-10-19)
 
 
