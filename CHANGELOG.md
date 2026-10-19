@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.3](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.2...v0.5.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* add missing if to build attestation action ([#39](https://github.com/lannuttia/terraform-provider-quay/issues/39)) ([a33fed9](https://github.com/lannuttia/terraform-provider-quay/commit/a33fed95fb26593d865a83e28e3400291f4efaa5))
+* add pull-requests write permission to cd workflow ([b77945a](https://github.com/lannuttia/terraform-provider-quay/commit/b77945a2f7f206fd59e3730f117cfe53358a648e))
+
 ## [0.5.2](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.1...v0.5.2) (2026-10-18)
 
 
