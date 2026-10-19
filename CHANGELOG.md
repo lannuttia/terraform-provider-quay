@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.3...v0.5.4) (2026-10-19)
+
+
+### Bug Fixes
+
+* switch to draft release flow for immutable release support ([95b5fca](https://github.com/lannuttia/terraform-provider-quay/commit/95b5fca29ebcf17c95bd39189851434167a354ef))
+
 ## [0.5.3](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.2...v0.5.3) (2026-10-19)
 
 
