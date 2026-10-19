@@ -1,24 +1,7 @@
 {
-  "release-type": "go",
-  "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
-  "changelog-sections": [
-    { "type": "feat", "section": "Features" },
-    { "type": "fix", "section": "Bug Fixes" },
-    { "type": "deps", "section": "Dependencies" },
-    { "type": "docs", "section": "Documentation" },
-    { "type": "chore", "section": "Maintenance", "hidden": true },
-    { "type": "ci", "section": "Maintenance", "hidden": true },
-    { "type": "build", "section": "Maintenance", "hidden": true },
-    { "type": "refactor", "section": "Maintenance", "hidden": true },
-    { "type": "perf", "section": "Maintenance", "hidden": true },
-    { "type": "test", "section": "Maintenance", "hidden": true },
-    { "type": "style", "section": "Maintenance", "hidden": true }
-  ],
   "packages": {
     ".": {
-      "draft": true,
-      "force-tag-creation": true
+      "release-type": "go"
     }
   }
 }

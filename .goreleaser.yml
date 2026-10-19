@@ -7,45 +7,37 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    mod_timestamp: "{{ .CommitTimestamp }}"
+    mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
     ldflags:
-      - "-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}"
+      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
     goos:
       - freebsd
-      - windows
+      - openbsd
+      - solaris
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
-      - "386"
+      - '386'
       - arm
       - arm64
-      - s390x
     ignore:
       - goos: darwin
-        goarch: "386"
-      - goos: darwin
-        goarch: s390x
-      - goos: freebsd
-        goarch: s390x
-      - goos: windows
-        goarch: arm
-      - goos: windows
-        goarch: s390x
-    binary: "{{ .ProjectName }}_v{{ .Version }}"
+        goarch: '386'
+    binary: '{{ .ProjectName }}_v{{ .Version }}'
 
 archives:
-  - formats:
-      - zip
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 
 checksum:
   extra_files:
-    - glob: "terraform-registry-manifest.json"
-      name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
-  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+    - glob: 'terraform-registry-manifest.json'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
 signs:
@@ -59,22 +51,10 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 
-release:
-  extra_files:
-    - glob: "terraform-registry-manifest.json"
-      name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
-  # release-please creates a draft GitHub Release with notes from CHANGELOG.md.
-  # keep-existing tells GoReleaser to upload assets to the draft without
-  # overwriting the release notes. draft: false then publishes it, ensuring
-  # the release is never publicly visible until all assets are attached.
-  mode: keep-existing
-  draft: false
-  make_latest: true
-  # Point users to CHANGELOG.md for the full structured release notes.
-  footer: |
-    **Full changelog**: https://github.com/lannuttia/terraform-provider-quay/blob/{{ .Tag }}/CHANGELOG.md
-
 changelog:
-  # release-please owns CHANGELOG.md and generates structured release notes.
-  # Disable goreleaser's changelog so it doesn't duplicate or overwrite them.
   disable: true
+
+release:
+  mode: append
+  replace_existing_artifacts: false
+  replace_existing_draft: false
