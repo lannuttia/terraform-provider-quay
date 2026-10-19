@@ -59,5 +59,8 @@ release:
   replace_existing_artifacts: false
   use_existing_draft: true
   draft: false
+  extra_files:
+    - glob: 'terraform-registry-manifest.json'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
   preflight:
     fail_on_error: true
