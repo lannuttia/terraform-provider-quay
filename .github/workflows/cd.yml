@@ -38,7 +38,7 @@ jobs:
 
       - name: Set up Go
         if: *release-created
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: 'go.mod'
 
@@ -64,6 +64,6 @@ jobs:
 
       - name: Attest build provenance
         if: *release-created
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-checksums: ./dist/terraform-provider-quay_${{ steps.release.outputs.version }}_SHA256SUMS
