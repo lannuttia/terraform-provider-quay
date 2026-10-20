@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.10](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.9...v0.5.10) (2026-10-20)
+
+
+### Bug Fixes
+
+* env var token and url ignored when provider block attribute is empty string ([#54](https://github.com/lannuttia/terraform-provider-quay/issues/54)) ([29983fd](https://github.com/lannuttia/terraform-provider-quay/commit/29983fd763341616990853c035d94498cbb8fedb))
+* pin actions/setup-go and actions/attest to commit SHAs in cd.yml ([#50](https://github.com/lannuttia/terraform-provider-quay/issues/50)) ([b67b748](https://github.com/lannuttia/terraform-provider-quay/commit/b67b7484605b278c9a22cff9c6b40446e7839946))
+
 ## [0.5.9](https://github.com/lannuttia/terraform-provider-quay/compare/v0.5.8...v0.5.9) (2026-10-19)
 
 
