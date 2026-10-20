@@ -69,12 +69,16 @@ func (p *QuayProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	url := os.Getenv("QUAY_URL")
 	if !config.URL.IsNull() && !config.URL.IsUnknown() {
-		url = config.URL.ValueString()
+		if v := config.URL.ValueString(); v != "" {
+			url = v
+		}
 	}
 
 	token := os.Getenv("QUAY_TOKEN")
 	if !config.Token.IsNull() && !config.Token.IsUnknown() {
-		token = config.Token.ValueString()
+		if v := config.Token.ValueString(); v != "" {
+			token = v
+		}
 	}
 
 	if token == "" {
