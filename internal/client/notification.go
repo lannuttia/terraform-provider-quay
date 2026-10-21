@@ -1,0 +1,95 @@
+package client
+
+import (
+	"context"
+	"fmt"
+)
+
+// VulnerabilityLevel is the minimum severity that triggers a vulnerability_found notification.
+type VulnerabilityLevel string
+
+const (
+	VulnerabilityLevelLow      VulnerabilityLevel = "Low"
+	VulnerabilityLevelMedium   VulnerabilityLevel = "Medium"
+	VulnerabilityLevelHigh     VulnerabilityLevel = "High"
+	VulnerabilityLevelCritical VulnerabilityLevel = "Critical"
+)
+
+// VulnerabilityLevels returns all valid VulnerabilityLevel values in ascending severity order.
+func VulnerabilityLevels() []VulnerabilityLevel {
+	return []VulnerabilityLevel{
+		VulnerabilityLevelLow,
+		VulnerabilityLevelMedium,
+		VulnerabilityLevelHigh,
+		VulnerabilityLevelCritical,
+	}
+}
+
+// EventConfig holds the event-specific configuration returned by the Quay API.
+type EventConfig map[string]any
+
+// VulnerabilityLevel extracts the vulnerability severity level from the event
+// config. Returns an empty string if the key is absent.
+func (e EventConfig) VulnerabilityLevel() VulnerabilityLevel {
+	v, _ := e["level"]
+	return VulnerabilityLevel(fmt.Sprintf("%v", v))
+}
+
+// Notification represents a Quay repository notification.
+type Notification struct {
+	UUID             string         `json:"uuid"`
+	Title            string         `json:"title,omitempty"`
+	Event            string         `json:"event"`
+	EventConfig      EventConfig    `json:"event_config"`
+	Method           string         `json:"method"`
+	Config           map[string]any `json:"config"`
+	NumberOfFailures int            `json:"number_of_failures,omitempty"`
+}
+
+// CreateNotificationRequest is the request body for creating a notification.
+// Note: the Quay API uses camelCase "eventConfig" in request bodies but
+// snake_case "event_config" in response bodies.
+type CreateNotificationRequest struct {
+	Event       string         `json:"event"`
+	Method      string         `json:"method"`
+	Config      map[string]any `json:"config"`
+	EventConfig map[string]any `json:"eventConfig"`
+	Title       string         `json:"title,omitempty"`
+}
+
+func (c *Client) CreateRepoNotification(ctx context.Context, repository string, req CreateNotificationRequest) (*Notification, error) {
+	var notif Notification
+	if err := c.post(ctx, fmt.Sprintf("repository/%s/notification/", repository), req, &notif); err != nil {
+		return nil, fmt.Errorf("creating notification on repository %q: %w", repository, err)
+	}
+	return &notif, nil
+}
+
+func (c *Client) GetRepoNotification(ctx context.Context, repository, uuid string) (*Notification, error) {
+	var notif Notification
+	if err := c.get(ctx, fmt.Sprintf("repository/%s/notification/%s", repository, uuid), &notif); err != nil {
+		return nil, fmt.Errorf("getting notification %q on repository %q: %w", uuid, repository, err)
+	}
+	return &notif, nil
+}
+
+func (c *Client) DeleteRepoNotification(ctx context.Context, repository, uuid string) error {
+	if err := c.delete(ctx, fmt.Sprintf("repository/%s/notification/%s", repository, uuid)); err != nil {
+		return fmt.Errorf("deleting notification %q on repository %q: %w", uuid, repository, err)
+	}
+	return nil
+}
+
+func (c *Client) ResetRepoNotificationFailures(ctx context.Context, repository, uuid string) error {
+	if err := c.post(ctx, fmt.Sprintf("repository/%s/notification/%s", repository, uuid), nil, nil); err != nil {
+		return fmt.Errorf("resetting notification failures for %q on repository %q: %w", uuid, repository, err)
+	}
+	return nil
+}
+
+func (c *Client) TestRepoNotification(ctx context.Context, repository, uuid string) error {
+	if err := c.post(ctx, fmt.Sprintf("repository/%s/notification/%s/test", repository, uuid), nil, nil); err != nil {
+		return fmt.Errorf("testing notification %q on repository %q: %w", uuid, repository, err)
+	}
+	return nil
+}
